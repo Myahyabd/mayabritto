@@ -554,7 +554,7 @@ function App() {
   const saveConfigToServer = async (updatedCategories, settingsOverride = {}) => {
     const configToSave = {
       categories: updatedCategories,
-      games: settingsOverride.games !== undefined ? settingsOverride.games : games
+      games: settingsOverride.games || games
     };
 
     // 1. Always save to localStorage
@@ -564,99 +564,17 @@ function App() {
       console.error("Failed to save to localStorage:", e);
     }
 
-    // 2. Save to server if in Dev Mode
-    if (!isDev) return;
+    // 2. Sync to server (Vite dev Node server or Hostinger PHP backend)
     try {
-      const response = await fetch('/api/save-config', {
+      const url = isDev ? '/api/save-config' : '/api.php?action=save-config';
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configToSave)
       });
-      if (!response.ok) throw new Error('Failed to save config');
+      if (!response.ok) throw new Error('Failed to save config to server');
     } catch (err) {
-      console.error(err);
-      alert("কনফিগারেশন ফাইল আপডেট করা যায়নি!");
-    }
-  };
-
-  // Sync config to GitHub (triggers Netlify build to deploy updates live from mobile)
-  const handleSyncToGitHub = async (e) => {
-    e.preventDefault();
-    if (!ghUsername.trim() || !ghRepo.trim() || !ghToken.trim()) {
-      alert("দয়া করে গিটহাব ইউজারনেম, রিপোজিটরি এবং পার্সোনাল অ্যাক্সেস টোকেন (PAT) লিখুন!");
-      return;
-    }
-
-    setIsSyncing(true);
-
-    try {
-      // Save inputs to localStorage for convenience
-      localStorage.setItem('gh_username', ghUsername.trim());
-      localStorage.setItem('gh_repo', ghRepo.trim());
-      localStorage.setItem('gh_token', ghToken.trim());
-      localStorage.setItem('gh_branch', ghBranch.trim());
-
-      const configToSave = {
-        categories,
-        games
-      };
-      const configString = JSON.stringify(configToSave, null, 2);
-
-      // Safe base64 encoding for UTF-8
-      const utf8Bytes = new TextEncoder().encode(configString);
-      let binary = '';
-      for (let i = 0; i < utf8Bytes.byteLength; i++) {
-        binary += String.fromCharCode(utf8Bytes[i]);
-      }
-      const base64Content = window.btoa(binary);
-
-      const path = 'public/uploads/config.json';
-      const url = `https://api.github.com/repos/${ghUsername.trim()}/${ghRepo.trim()}/contents/${path}`;
-      const headers = {
-        'Authorization': `token ${ghToken.trim()}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      };
-
-      // Fetch existing file SHA
-      let sha = null;
-      try {
-        const getRes = await fetch(`${url}?ref=${ghBranch.trim()}`, { headers });
-        if (getRes.ok) {
-          const getData = await getRes.json();
-          sha = getData.sha;
-        }
-      } catch (err) {
-        console.warn("Could not fetch existing SHA, assuming new file:", err);
-      }
-
-      // Commit file to GitHub
-      const putBody = {
-        message: "Update game configuration from mobile admin panel 📱🚀",
-        content: base64Content,
-        branch: ghBranch.trim()
-      };
-      if (sha) {
-        putBody.sha = sha;
-      }
-
-      const putRes = await fetch(url, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(putBody)
-      });
-
-      if (!putRes.ok) {
-        const errData = await putRes.json();
-        throw new Error(errData.message || "Failed to push to GitHub");
-      }
-
-      alert("🎉 গিটহাবে সফলভাবে সিঙ্ক ও আপডেট করা হয়েছে! নেটলিফাই এখন সাইটটি লাইভ করছে। প্রায় ৩০-৪৫ সেকেন্ডের মধ্যে আপনার আপডেট করা অপশনগুলো যেকোনো ডিভাইসে লাইভ দেখতে পাবেন।");
-    } catch (err) {
-      console.error(err);
-      alert(`গিটহাব সিঙ্ক ব্যর্থ হয়েছে: ${err.message}`);
-    } finally {
-      setIsSyncing(false);
+      console.warn("Could not sync config to server (this is normal if running statically):", err);
     }
   };
 
@@ -874,12 +792,17 @@ function App() {
 
     const file = addItemFile[catId];
 
-    if (file) {
-      try {
+    try {
+      let newImg = null;
+      
+      if (file) {
         const dataUrl = await fileToDataURL(file);
-        
-        if (isDev) {
-          const response = await fetch('/api/upload', {
+        let uploadSuccess = false;
+
+        // Try server upload first
+        try {
+          const url = isDev ? '/api/upload' : '/api.php?action=upload';
+          const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -893,149 +816,68 @@ function App() {
           if (response.ok) {
             const result = await response.json();
             if (result.success && result.image) {
-              const newImg = result.image;
-              const updated = categories.map(cat => {
-                if (cat.id === catId) {
-                  return {
-                    ...cat,
-                    items: [...(cat.items || []), newImg]
-                  };
-                }
-                return cat;
-              });
-              setCategories(updated);
-              saveConfigToServer(updated); // Sync to localStorage too!
-              
-              setSelectedImageIds(prev => {
-                const next = new Set(prev);
-                next.add(newImg.id);
-                return next;
-              });
+              newImg = result.image;
+              uploadSuccess = true;
             }
-          } else {
-            throw new Error('Upload failed');
           }
-        } else {
-          // Live Production Mode: Save image as base64 directly in localStorage
-          const newImg = {
+        } catch (e) {
+          console.warn("Server image upload failed, falling back to local base64 storage:", e);
+        }
+
+        if (!uploadSuccess) {
+          newImg = {
             id: Date.now() + Math.floor(Math.random() * 1000),
             name: title,
             description: description,
             url: dataUrl
           };
-          const updated = categories.map(cat => {
-            if (cat.id === catId) {
-              return {
-                ...cat,
-                items: [...(cat.items || []), newImg]
-              };
-            }
-            return cat;
-          });
-          setCategories(updated);
-          saveConfigToServer(updated);
-          
-          setSelectedImageIds(prev => {
-            const next = new Set(prev);
-            next.add(newImg.id);
-            return next;
-          });
         }
-
-        // Clear states
-        setNewItemsText(prev => ({ ...prev, [catId]: { name: '', description: '' } }));
-        setAddItemFile(prev => {
-          const next = { ...prev };
-          delete next[catId];
-          return next;
-        });
-      } catch (err) {
-        console.error(err);
-        alert("ছবি সংরক্ষণ করা যায়নি!");
+      } else {
+        // Plain text item
+        newImg = {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          name: title,
+          description: description
+        };
       }
-    } else {
-      const newItem = {
-        id: 'text_' + Date.now() + Math.random().toString(36).substring(2, 5),
-        name: title,
-        description: description
-      };
 
       const updated = categories.map(cat => {
         if (cat.id === catId) {
           return {
             ...cat,
-            items: [...(cat.items || []), newItem]
+            items: [...(cat.items || []), newImg]
           };
         }
         return cat;
       });
-
       setCategories(updated);
       saveConfigToServer(updated);
+
+      if (newImg.url) {
+        setSelectedImageIds(prev => {
+          const next = new Set(prev);
+          next.add(newImg.id);
+          return next;
+        });
+      }
+
+      // Clear states
       setNewItemsText(prev => ({ ...prev, [catId]: { name: '', description: '' } }));
+      setAddItemFile(prev => {
+        const next = { ...prev };
+        delete next[catId];
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+      alert("সংরক্ষণ করা যায়নি!");
     }
   };
 
-  // Delete Item from Category
-  const handleDeleteItem = (catId, indexToDelete) => {
-    const updated = categories.map(cat => {
-      if (cat.id === catId) {
-        return {
-          ...cat,
-          items: cat.items.filter((_, idx) => idx !== indexToDelete)
-        };
-      }
-      return cat;
-    });
-
-    setCategories(updated);
-    saveConfigToServer(updated);
-  };
-
-  // Handle Image File Select for specific Category
-  const handleFileSelect = (catId, e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    const newPending = files.map(file => ({
-      id: Math.random().toString(36).substring(2, 9),
-      file,
-      name: file.name.split('.')[0] || 'Image',
-      description: '',
-      previewUrl: URL.createObjectURL(file)
-    }));
-
-    setPendingUploads(prev => ({
-      ...prev,
-      [catId]: [...(prev[catId] || []), ...newPending]
-    }));
-    e.target.value = '';
-  };
-
-  const updatePendingFile = (catId, id, field, value) => {
-    setPendingUploads(prev => ({
-      ...prev,
-      [catId]: prev[catId].map(item => (item.id === id ? { ...item, [field]: value } : item))
-    }));
-  };
-
-  const removePendingFile = (catId, id) => {
-    setPendingUploads(prev => {
-      const catList = prev[catId] || [];
-      const filtered = catList.filter(item => item.id !== id);
-      const removed = catList.find(item => item.id === id);
-      if (removed) URL.revokeObjectURL(removed.previewUrl);
-      return {
-        ...prev,
-        [catId]: filtered
-      };
-    });
-  };
 
   // Upload Images for specific Category
   const handleBatchUpload = async (e, catId) => {
     e.preventDefault();
-    if (!isDev) return;
     const catPending = pendingUploads[catId] || [];
     if (catPending.length === 0) return;
 
@@ -1052,32 +894,47 @@ function App() {
       const item = catPending[i];
       try {
         const dataUrl = await fileToDataURL(item.file);
-        
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            categoryId: catId,
-            name: item.name, 
-            dataUrl, 
-            description: item.description 
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Server returned status ${response.status}`);
+        let newImg = null;
+        let uploadSuccess = false;
+
+        // Try server upload first
+        try {
+          const url = isDev ? '/api/upload' : '/api.php?action=upload';
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              categoryId: catId,
+              name: item.name, 
+              dataUrl, 
+              description: item.description 
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.image) {
+              newImg = result.image;
+              uploadSuccess = true;
+            }
+          }
+        } catch (err) {
+          console.warn("Server task upload failed, falling back to local base64 storage:", err);
         }
-        
-        const result = await response.json();
-        if (result.success && result.image) {
-          const newImg = result.image;
-          newUploadedImages.push(newImg);
-          updatedIds.add(newImg.id);
-          succeededCount++;
-          URL.revokeObjectURL(item.previewUrl);
-        } else {
-          throw new Error(result.error || 'Server error');
+
+        if (!uploadSuccess) {
+          newImg = {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            name: item.name,
+            description: item.description,
+            url: dataUrl
+          };
         }
+
+        newUploadedImages.push(newImg);
+        updatedIds.add(newImg.id);
+        succeededCount++;
+        URL.revokeObjectURL(item.previewUrl);
       } catch (err) {
         console.error(`Failed to upload ${item.name}:`, err);
         failedCount++;
@@ -1087,7 +944,7 @@ function App() {
       }
     }
 
-    // Update frontend state with newly uploaded images
+    // Update frontend state
     const updatedCategories = categories.map(cat => {
       if (cat.id === catId) {
         return {
@@ -1099,6 +956,7 @@ function App() {
     });
 
     setCategories(updatedCategories);
+    saveConfigToServer(updatedCategories);
     setSelectedImageIds(updatedIds);
     setPendingUploads(prev => ({ ...prev, [catId]: failedItems }));
     setUploadingCategory(null);
@@ -1110,42 +968,6 @@ function App() {
     }
   };
 
-  // Convert File helper
-  const fileToDataURL = (file) => {
-    return new Promise((resolve, reject) => {
-      const blobUrl = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const MAX_SIZE = 800;
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height = Math.round((height * MAX_SIZE) / width);
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width = Math.round((width * MAX_SIZE) / height);
-            height = MAX_SIZE;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        URL.revokeObjectURL(blobUrl);
-        resolve(dataUrl);
-      };
-      img.onerror = (err) => {
-        URL.revokeObjectURL(blobUrl);
-        reject(new Error('Image loading failed'));
-      };
-      img.src = blobUrl;
-    });
-  };
 
   // Update Image/Text Details inside specific Category
   const handleUpdateImage = async (e) => {
@@ -1154,174 +976,131 @@ function App() {
 
     const { categoryId, imageItem, newImageDataUrl } = editingImage;
 
-    if (isDev) {
-      try {
-        const response = await fetch('/api/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            categoryId,
-            id: imageItem.id,
-            name: imageItem.name,
-            description: imageItem.description,
-            dataUrl: newImageDataUrl || null
-          })
-        });
+    let updatedItem = null;
+    let updateSuccess = false;
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.item) {
-            const updated = categories.map(cat => {
-              if (cat.id === categoryId) {
-                return {
-                  ...cat,
-                  items: cat.items.map(item => {
-                    const itemId = typeof item === 'object' && item !== null ? item.id : item;
-                    if (itemId === imageItem.id) {
-                      return result.item;
-                    }
-                    return item;
-                  })
-                };
-              }
-              return cat;
-            });
-            setCategories(updated);
-            saveConfigToServer(updated); // Sync to localStorage too!
-            
-            if (newImageDataUrl) {
-              setSelectedImageIds(prev => {
-                const next = new Set(prev);
-                next.add(imageItem.id);
-                return next;
-              });
-            }
-
-            setEditingImage(null);
-          } else {
-            throw new Error('Update failed');
-          }
-        } else {
-          throw new Error('Update failed');
-        }
-      } catch (err) {
-        console.error(err);
-        alert("এডিট সেভ করা যায়নি!");
-      }
-    } else {
-      // Production mode: save directly to state and localStorage
-      const updated = categories.map(cat => {
-        if (cat.id === categoryId) {
-          return {
-            ...cat,
-            items: cat.items.map(item => {
-              const itemId = typeof item === 'object' && item !== null ? item.id : item;
-              if (itemId === imageItem.id) {
-                return {
-                  ...item,
-                  name: imageItem.name,
-                  description: imageItem.description,
-                  url: newImageDataUrl || (typeof item === 'object' ? item.url : null)
-                };
-              }
-              return item;
-            })
-          };
-        }
-        return cat;
+    // Try server update first
+    try {
+      const url = isDev ? '/api/update' : '/api.php?action=update';
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoryId,
+          id: imageItem.id,
+          name: imageItem.name,
+          description: imageItem.description,
+          dataUrl: newImageDataUrl || null
+        })
       });
-      setCategories(updated);
-      saveConfigToServer(updated);
-      
-      if (newImageDataUrl) {
-        setSelectedImageIds(prev => {
-          const next = new Set(prev);
-          next.add(imageItem.id);
-          return next;
-        });
-      }
 
-      setEditingImage(null);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.item) {
+          updatedItem = result.item;
+          updateSuccess = true;
+        }
+      }
+    } catch (err) {
+      console.warn("Server update failed, falling back to local storage:", err);
     }
+
+    if (!updateSuccess) {
+      updatedItem = {
+        ...imageItem,
+        name: imageItem.name,
+        description: imageItem.description,
+        url: newImageDataUrl || (typeof imageItem === 'object' ? imageItem.url : null)
+      };
+    }
+
+    const updated = categories.map(cat => {
+      if (cat.id === categoryId) {
+        return {
+          ...cat,
+          items: cat.items.map(item => {
+            const itemId = typeof item === 'object' && item !== null ? item.id : item;
+            if (itemId === imageItem.id) {
+              return updatedItem;
+            }
+            return item;
+          })
+        };
+      }
+      return cat;
+    });
+
+    setCategories(updated);
+    saveConfigToServer(updated);
+
+    if (newImageDataUrl) {
+      setSelectedImageIds(prev => {
+        const next = new Set(prev);
+        next.add(imageItem.id);
+        return next;
+      });
+    }
+
+    setEditingImage(null);
   };
+
 
   // Delete Image/Item from specific Category
   const handleDeleteImageItem = async (catId, id) => {
     if (!window.confirm("আপনি কি এই ছবিটি ডিলিট করতে চান?")) return;
     
-    if (isDev) {
-      try {
-        const response = await fetch('/api/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ categoryId: catId, id })
-        });
-        
-        if (response.ok) {
-          const updated = categories.map(cat => {
-            if (cat.id === catId) {
-              return {
-                ...cat,
-                items: cat.items.filter(item => typeof item === 'string' || item.id !== id)
-              };
-            }
-            return cat;
-          });
-          setCategories(updated);
-          saveConfigToServer(updated); // Sync to localStorage too!
-          setSelectedImageIds(prev => {
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-          });
-        } else {
-          throw new Error('Delete failed');
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    } else {
-      // Production mode: delete directly from state and localStorage
-      const updated = categories.map(cat => {
-        if (cat.id === catId) {
-          return {
-            ...cat,
-            items: cat.items.filter(item => typeof item === 'string' || item.id !== id)
-          };
-        }
-        return cat;
+    // Try server delete first
+    try {
+      const url = isDev ? '/api/delete' : '/api.php?action=delete';
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryId: catId, id })
       });
-      setCategories(updated);
-      saveConfigToServer(updated);
-      setSelectedImageIds(prev => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
+    } catch (err) {
+      console.warn("Server delete failed, falling back to local storage deletion:", err);
     }
+
+    const updated = categories.map(cat => {
+      if (cat.id === catId) {
+        return {
+          ...cat,
+          items: cat.items.filter(item => {
+            const itemId = typeof item === 'object' && item !== null ? item.id : item;
+            return itemId !== id;
+          })
+        };
+      }
+      return cat;
+    });
+
+    setCategories(updated);
+    saveConfigToServer(updated);
+    
+    setSelectedImageIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   };
+
 
   // Clear/Reset Database
   const handleClearAll = async () => {
     if (!window.confirm("আপনি কি নিশ্চিত যে সব ডেটা রিসেট করতে চান? এটি ডিফল্ট ক্যাটেগরিতে ফিরে যাবে এবং ছবিগুলো ডিলিট হবে।")) return;
     
-    if (isDev) {
-      try {
-        const response = await fetch('/api/clear', { method: 'POST' });
-        if (response.ok) {
-          localStorage.removeItem('spinner_custom_config');
-          window.location.reload();
-        } else {
-          throw new Error('Clear failed');
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    } else {
-      localStorage.removeItem('spinner_custom_config');
-      window.location.reload();
+    try {
+      const url = isDev ? '/api/clear' : '/api.php?action=clear';
+      await fetch(url, { method: 'POST' });
+    } catch (err) {
+      console.warn("Server database clear failed:", err);
     }
+
+    localStorage.removeItem('spinner_custom_config');
+    window.location.reload();
   };
+
+
 
   // Image checkbox select toggle
   const toggleImageSelection = (id) => {
