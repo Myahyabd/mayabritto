@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@theme {
+  /* Slate overrides for Midnight Plum (#140817) */
+  --color-slate-50: #FFF0F3; /* Soft Pearl White */
+  --color-slate-100: #FFF0F3; /* Soft Pearl White */
+  --color-slate-200: #ffd6df;
+  --color-slate-300: #ffb8c7;
+  --color-slate-400: #ffa1b6;
+  --color-slate-500: #c98696;
+  --color-slate-600: #8c5260;
+  --color-slate-700: #51222e;
+  --color-slate-750: #3a151f;
+  --color-slate-800: #200E25; /* Container Plum background */
+  --color-slate-850: #1b0a20; /* Form Input Plum background */
+  --color-slate-900: #140817; /* Midnight Plum Background */
+  --color-slate-950: #0C040E; /* Deep Nested List Plum */
+
+  /* Indigo overrides for Crimson Passion (#E63946) */
+  --color-indigo-50: #fff0f1;
+  --color-indigo-100: #ffe1e3;
+  --color-indigo-200: #ffc9cb;
+  --color-indigo-300: #ffa2a6;
+  --color-indigo-400: #ff7075;
+  --color-indigo-500: #f83c44;
+  --color-indigo-600: #E63946; /* Deep Crimson Passion */
+  --color-indigo-700: #c91f2a;
+  --color-indigo-800: #a61c25;
+  --color-indigo-900: #891d24;
+  --color-indigo-950: #4c0a0e;
+
+  /* Emerald overrides for Rose Petal Pink (#FF758F) */
+  --color-emerald-50: #fff0f3;
+  --color-emerald-100: #ffe3e8;
+  --color-emerald-200: #ffcbd6;
+  --color-emerald-300: #ffa1b5;
+  --color-emerald-400: #FF758F; /* Rose Petal Pink */
+  --color-emerald-500: #f43f68;
+  --color-emerald-600: #e02453;
+  --color-emerald-700: #bd143e;
+  --color-emerald-800: #9d1238;
+  --color-emerald-900: #831433;
+  --color-emerald-950: #4a0417;
+
+  /* Green overrides (used in winner cards and stepper icons) */
+  --color-green-50: #fff0f3;
+  --color-green-100: #ffe3e8;
+  --color-green-200: #ffcbd6;
+  --color-green-300: #ffa1b5;
+  --color-green-400: #FF758F;
+  --color-green-500: #FF758F;
+  --color-green-600: #e02453;
+  --color-green-950: #4a0417;
+
+  /* Primary text white override */
+  --color-white: #FFF0F3;
+}
+
+
+@layer utilities {
+  /* Slow spin for logo icon */
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+
+  /* Fade in animation */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out forwards;
+  }
+
+  /* Scale up animation */
+  @keyframes scaleUp {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .animate-scale-up {
+    animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Custom scrollbar for image list */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
+  }
+
+  /* Confetti animations */
+  .confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    top: -20px;
+    border-radius: 50%;
+  }
+
+  @keyframes confetti-fall-1 {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(350px) rotate(720deg); opacity: 0; }
+  }
+  @keyframes confetti-fall-2 {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(350px) rotate(-720deg); opacity: 0; }
+  }
+
+  .animate-confetti-1 {
+    animation: confetti-fall-1 2.5s ease-out infinite;
+    animation-delay: 0.1s;
+  }
+  .animate-confetti-2 {
+    animation: confetti-fall-2 2.2s ease-out infinite;
+    animation-delay: 0.5s;
+  }
+  .animate-confetti-3 {
+    animation: confetti-fall-1 2.8s ease-out infinite;
+    animation-delay: 0.2s;
+  }
+  .animate-confetti-4 {
+    animation: confetti-fall-2 2.4s ease-out infinite;
+    animation-delay: 0.7s;
+  }
+  .animate-confetti-5 {
+    animation: confetti-fall-1 2.6s ease-out infinite;
+    animation-delay: 0.4s;
+  }
+}
