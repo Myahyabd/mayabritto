@@ -445,7 +445,7 @@ function App() {
 
   // Fetch configs on load
   useEffect(() => {
-    if (!isAdminRoute || isAuthenticated) {
+    if (isAuthenticated) {
       // 1. Check localStorage first
       const localConfig = localStorage.getItem('spinner_custom_config');
       if (localConfig) {
@@ -471,7 +471,7 @@ function App() {
           console.warn("Could not load categories configuration:", err);
         });
     }
-  }, [isAuthenticated, isAdminRoute]);
+  }, [isAuthenticated]);
 
   // Handle Login
   const handleLogin = (e) => {
@@ -1170,8 +1170,8 @@ function App() {
     return winVal && typeof winVal === 'object' && winVal.url;
   });
 
-  // LOGIN SCREEN (Only for Admin Mode)
-  if (isAdminRoute && !isAuthenticated) {
+  // LOGIN SCREEN (Required for all visitors)
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700 w-full max-w-md">
