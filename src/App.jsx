@@ -2557,7 +2557,18 @@ function App() {
                     : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-750'
                 }`}
               >
-                <span>🎲 ডাইস ও ট্রুথ/ডেয়ার এডিটর</span>
+                <span>🎲 ডাইস গেম এডিটর</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminActiveTab('truth_dare')}
+                className={`flex-1 min-w-[140px] py-3 rounded-2xl font-bold text-xs md:text-sm transition flex items-center justify-center space-x-1.5 ${
+                  adminActiveTab === 'truth_dare'
+                    ? 'bg-indigo-650 text-white shadow-lg'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-750'
+                }`}
+              >
+                <span>🤫 ট্রুথ/ডেয়ার এডিটর</span>
               </button>
               <button
                 type="button"
@@ -3431,7 +3442,21 @@ function App() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
 
+          {/* TRUTH & DARE GAME EDITOR */}
+          {adminActiveTab === 'truth_dare' && (
+            <div className="space-y-6">
+              <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md">
+                <h3 className="text-base font-extrabold text-white mb-1">🤫 ট্রুথ অ্যান্ড ডেয়ার কাস্টমাইজেশন</h3>
+                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                  সত্য বলা (Truth) অথবা রোমান্টিক ডের (Dare) সম্পন্ন করার খেলার জন্য কাস্টম টাস্ক ও প্রশ্ন সেট করুন।
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 🤫 TRUTH TASKS EDITOR CARD */}
                 {categories.find(c => c.id === 'truth_tasks') && (() => {
                   const truthCat = categories.find(c => c.id === 'truth_tasks');
