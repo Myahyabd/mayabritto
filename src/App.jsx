@@ -375,6 +375,10 @@ function App() {
   const [diceGuessedNumber, setDiceGuessedNumber] = useState(null);
   const [isCustomRounds, setIsCustomRounds] = useState(false);
   const [customRoundsInput, setCustomRoundsInput] = useState('6');
+  
+  // Penalty Timer States
+  const [penaltyTimer, setPenaltyTimer] = useState(null); // null or number of seconds
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   // Helper to extract image IDs
   const initializeImageIds = (cats) => {
@@ -485,6 +489,27 @@ function App() {
         });
     }
   }, [isAuthenticated]);
+
+  // Handle Penalty Timer Countdown Tick
+  useEffect(() => {
+    let intervalId = null;
+    if (diceGameState === 'penalty' && isTimerRunning && penaltyTimer !== null && penaltyTimer > 0) {
+      intervalId = setInterval(() => {
+        setPenaltyTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(intervalId);
+            setIsTimerRunning(false);
+            if (isMusicOn) playCelebrationSound(); // Play victory sound on timer finish
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [diceGameState, isTimerRunning, penaltyTimer, isMusicOn]);
 
   // Handle Login
   const handleLogin = (e) => {
@@ -674,6 +699,14 @@ function App() {
   };
 
 
+  const formatTimer = (secs) => {
+    if (secs === null || secs === undefined) return '';
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+
   // --- DICE GAME LOGIC ---
   const getPlayerTaskPool = (playerKey) => {
     const player = playerKey === 'player1' ? sessionPlayer1 : sessionPlayer2;
@@ -766,6 +799,17 @@ function App() {
       if (selectedTask) {
         setUsedTasks(prev => [...prev, selectedTask.id]);
         setActivePenaltyTask(selectedTask);
+        
+        // Start timer if duration is configured (in minutes)
+        const durationMin = selectedTask.duration ? parseInt(selectedTask.duration) : 0;
+        if (durationMin > 0) {
+          setPenaltyTimer(durationMin * 60);
+          setIsTimerRunning(true);
+        } else {
+          setPenaltyTimer(null);
+          setIsTimerRunning(false);
+        }
+
         setDiceGameState('penalty');
       } else {
         alert("অ্যাডমিন প্যানেল থেকে অনুগ্রহ করে ডাইস গেমের টাস্ক তালিকা যুক্ত করুন!");
@@ -788,11 +832,19 @@ function App() {
     };
     setDiceRoundHistory(prev => [historyItem, ...prev]);
 
+    // Reset timer
+    setPenaltyTimer(null);
+    setIsTimerRunning(false);
+
     // Move to next turn
     advanceDiceTurn();
   };
 
   const advanceDiceTurn = () => {
+    // Reset timer states
+    setPenaltyTimer(null);
+    setIsTimerRunning(false);
+
     // Check if game has ended
     if (diceCurrentRound >= diceTotalRounds) {
       setDiceGameState('ended');
@@ -916,6 +968,9 @@ function App() {
       return;
     }
 
+    const durationInput = itemData.duration ? parseInt(itemData.duration) : 0;
+    const duration = isNaN(durationInput) ? 0 : durationInput;
+
     const file = addItemFile[catId];
 
     try {
@@ -935,6 +990,7 @@ function App() {
               categoryId: catId,
               name: title, 
               description,
+              duration,
               dataUrl
             })
           });
@@ -955,6 +1011,7 @@ function App() {
             id: Date.now() + Math.floor(Math.random() * 1000),
             name: title,
             description: description,
+            duration: duration,
             url: dataUrl
           };
         }
@@ -963,7 +1020,8 @@ function App() {
         newImg = {
           id: Date.now() + Math.floor(Math.random() * 1000),
           name: title,
-          description: description
+          description: description,
+          duration: duration
         };
       }
 
@@ -1105,6 +1163,9 @@ function App() {
     let updatedItem = null;
     let updateSuccess = false;
 
+    const durationInput = imageItem.duration ? parseInt(imageItem.duration) : 0;
+    const duration = isNaN(durationInput) ? 0 : durationInput;
+
     // Try server update first
     try {
       const url = isDev ? '/api/update' : '/api.php?action=update';
@@ -1116,6 +1177,7 @@ function App() {
           id: imageItem.id,
           name: imageItem.name,
           description: imageItem.description,
+          duration,
           dataUrl: newImageDataUrl || null
         })
       });
@@ -1136,6 +1198,7 @@ function App() {
         ...imageItem,
         name: imageItem.name,
         description: imageItem.description,
+        duration: duration,
         url: newImageDataUrl || (typeof imageItem === 'object' ? imageItem.url : null)
       };
     }
@@ -1959,12 +2022,30 @@ function App() {
                               </p>
                             )}
 
+                            {penaltyTimer !== null && (
+                              <div className="mb-4 bg-slate-950/40 px-4 py-2.5 rounded-2xl border border-slate-750/40 flex items-center space-x-2.5 animate-pulse">
+                                <span className="text-xl">⏳</span>
+                                <div className="text-left">
+                                  <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">টাস্ক সময় বাকি</span>
+                                  <span className="text-lg font-black text-rose-450 font-mono tracking-wide">{formatTimer(penaltyTimer)}</span>
+                                </div>
+                              </div>
+                            )}
+
                             <button
                               type="button"
+                              disabled={penaltyTimer !== null && penaltyTimer > 0}
                               onClick={handleCompletePenalty}
-                              className="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-2.5 rounded-xl transition shadow active:scale-[0.98]"
+                              className={`w-full text-xs font-bold py-2.5 rounded-xl transition shadow active:scale-[0.98] ${
+                                penaltyTimer !== null && penaltyTimer > 0
+                                  ? 'bg-slate-700 text-slate-450 border border-slate-750 cursor-not-allowed'
+                                  : 'bg-rose-600 hover:bg-rose-500 text-white cursor-pointer'
+                              }`}
                             >
-                              টাস্ক সম্পন্ন হয়েছে এবং মেনে নিলাম ✅
+                              {penaltyTimer !== null && penaltyTimer > 0
+                                ? `⏳ অপেক্ষা করুন (${formatTimer(penaltyTimer)})`
+                                : 'টাস্ক সম্পন্ন হয়েছে এবং মেনে নিলাম ✅'
+                              }
                             </button>
                           </div>
                         )}
@@ -2301,6 +2382,17 @@ function App() {
                           }))}
                           className="w-full bg-slate-800 text-white border border-slate-700 px-3 py-1.5 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500"
                           placeholder="বিবরণ / ডেসক্রিপশন (ঐচ্ছিক)"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          value={(newItemsText[cat.id] && newItemsText[cat.id].duration) || ''}
+                          onChange={(e) => setNewItemsText(prev => ({
+                            ...prev,
+                            [cat.id]: { ...(prev[cat.id] || {}), duration: e.target.value }
+                          }))}
+                          className="w-full bg-slate-800 text-white border border-slate-700 px-3 py-1.5 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                          placeholder="সময় লিমিট (মিনিট, যেমন: ৩, ৫ - না থাকলে ফাঁকা রাখুন)"
                         />
                         <div className="flex items-center space-x-2 bg-slate-800 p-2 rounded-lg border border-slate-750">
                           <span className="text-[10px] text-slate-400 font-bold shrink-0">ছবি (ঐচ্ছিক):</span>
@@ -2708,6 +2800,17 @@ function App() {
                         className="w-full bg-slate-850 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-rose-500 transition"
                         placeholder="বিস্তারিত বিবরণ / বর্ণনা (ঐচ্ছিক)"
                       />
+                      <input
+                        type="number"
+                        min="0"
+                        value={(newItemsText['wife_tasks'] && newItemsText['wife_tasks'].duration) || ''}
+                        onChange={(e) => setNewItemsText(prev => ({
+                          ...prev,
+                          ['wife_tasks']: { ...(prev['wife_tasks'] || {}), duration: e.target.value }
+                        }))}
+                        className="w-full bg-slate-850 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-rose-500 transition"
+                        placeholder="সময় লিমিট (মিনিট, যেমন: ৩, ৫ - না থাকলে ফাঁকা রাখুন)"
+                      />
                       <div className="flex items-center space-x-2 bg-slate-850 p-2 rounded-xl border border-slate-750">
                         <span className="text-[10px] text-slate-450 font-bold shrink-0">ছবি (ঐচ্ছিক):</span>
                         <input
@@ -2842,6 +2945,17 @@ function App() {
                         }))}
                         className="w-full bg-slate-850 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500 transition"
                         placeholder="বিস্তারিত বিবরণ / বর্ণনা (ঐচ্ছিক)"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        value={(newItemsText['husband_tasks'] && newItemsText['husband_tasks'].duration) || ''}
+                        onChange={(e) => setNewItemsText(prev => ({
+                          ...prev,
+                          ['husband_tasks']: { ...(prev['husband_tasks'] || {}), duration: e.target.value }
+                        }))}
+                        className="w-full bg-slate-850 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                        placeholder="সময় লিমিট (মিনিট, যেমন: ৩, ৫ - না থাকলে ফাঁকা রাখুন)"
                       />
                       <div className="flex items-center space-x-2 bg-slate-850 p-2 rounded-xl border border-slate-750">
                         <span className="text-[10px] text-slate-450 font-bold shrink-0">ছবি (ঐচ্ছিক):</span>
@@ -2983,6 +3097,21 @@ function App() {
                   rows="3"
                   className="w-full bg-slate-700 text-white border border-slate-600 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none"
                   placeholder="অপশনের বিবরণ (ঐচ্ছিক)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-xs font-bold mb-1">সময় লিমিট (মিনিট, যেমন: ৩, ৫ - না থাকলে ফাঁকা রাখুন)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingImage.imageItem.duration || ''}
+                  onChange={(e) => setEditingImage(prev => ({ 
+                    ...prev, 
+                    imageItem: { ...prev.imageItem, duration: e.target.value } 
+                  }))}
+                  className="w-full bg-slate-700 text-white border border-slate-600 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                  placeholder="না থাকলে ফাঁকা রাখুন"
                 />
               </div>
 

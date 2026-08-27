@@ -81,7 +81,7 @@ elseif ($action === 'upload') {
         $categoryId = $input['categoryId'] ?? '';
         $name = $input['name'] ?? '';
         $description = $input['description'] ?? '';
-        $dataUrl = $input['dataUrl'] ?? '';
+        $duration = isset($input['duration']) ? intval($input['duration']) : 0;
 
         if (!$dataUrl || !$categoryId) {
             throw new Exception("Missing parameters");
@@ -106,6 +106,7 @@ elseif ($action === 'upload') {
                 "id" => time() . rand(100, 999),
                 "name" => $name,
                 "description" => $description,
+                "duration" => $duration,
                 "filename" => $filename,
                 "url" => "./uploads/" . $filename
             ];
@@ -214,9 +215,10 @@ elseif ($action === 'update') {
                                 $url = "./uploads/" . $filename;
                             }
                         }
-
+                        $duration = isset($input['duration']) ? intval($input['duration']) : 0;
                         $item['name'] = $name;
                         $item['description'] = $description;
+                        $item['duration'] = $duration;
                         $item['filename'] = $filename;
                         $item['url'] = $url;
                         $updatedItem = $item;
