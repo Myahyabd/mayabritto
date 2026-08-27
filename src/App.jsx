@@ -272,9 +272,30 @@ const DEFAULT_WIFE_TASKS = [
   { id: 5008, name: "পছন্দের কাজ", description: "স্বামীর পছন্দের যেকোনো একটি কাজ করে দেওয়া" }
 ];
 
+const DEFAULT_TRUTH_TASKS = [
+  { id: 6001, name: "প্রথম প্রেমের মুহূর্ত", description: "আমাদের বিয়ের পর প্রথম কোন মুহূর্তটি দেখে তোমার আমার প্রেমে পড়তে ইচ্ছা করেছিল?" },
+  { id: 6002, name: "রোমান্টিক গোপন চিন্তা", description: "তোমার জীবনের এমন কোনো গোপন রোমান্টিক ডায়েরি বা চিন্তা কি আছে যা তুমি আমাকে কখনো বলোনি?" },
+  { id: 6003, name: "মিষ্টি ও রাগানো অভ্যাস", description: "আমার কোন অভ্যাসটি তোমার কাছে সবচেয়ে মিষ্টি লাগে আর কোনটা সবচেয়ে বেশি মেজাজ খারাপ করে?" },
+  { id: 6004, name: "প্রথম দেখা পটানো সংলাপ", description: "যদি আমাদের আবার নতুন করে প্রথম দেখা হতো, তুমি আমাকে পটানোর জন্য প্রথম কোন কথাটি বলতে?" },
+  { id: 6005, name: "প্রিয়তম রোমান্টিক স্মৃতি", description: "আমার সাথে কাটানো তোমার প্রিয়তম স্মৃতি কোনটি এবং কেন?" },
+  { id: 6006, name: "সুখী ঘুমের চিন্তা", description: "আমাকে জড়িয়ে ধরে ঘুমানোর সময় তোমার মনের সবচেয়ে সুখী চিন্তাটি কী থাকে?" },
+  { id: 6007, name: "ঝগড়ার পর মানানো", description: "আমাদের মধ্যে ঝগড়া হলে কে প্রথমে মানাতে আসে এবং কেন?" }
+];
+
+const DEFAULT_DARE_TASKS = [
+  { id: 7001, name: "পিঠ ম্যাসাজ (ডেসক্রিপশন)", description: "৫ মিনিট ধরে পার্টনারের পিঠে নরম করে মেসেজ করে দাও।", duration: 5 },
+  { id: 7002, name: "মাথা ম্যাসাজ (ডেসক্রিপশন)", description: "৩ মিনিট ধরে পার্টনারের মাথা সুন্দর করে ম্যাসাজ করে দাও।", duration: 3 },
+  { id: 7003, name: "কিসিং থেরাপি", description: "পরবর্তী ২ মিনিট স্ত্রীর গালে বা কপালে প্রতি ১০ সেকেন্ডে একটি করে মিষ্টি কিস করো।", duration: 2 },
+  { id: 7004, name: "আই-কন্ট্যাক্ট গান", description: "১ মিনিট স্বামীর চোখের দিকে একদম পলক না ফেলে রোমান্টিক গান গেয়ে তাকিয়ে থাকো।", duration: 1 },
+  { id: 7005, name: "কোলে মাথা রেখে প্রশংসা", description: "পার্টনারের কোলে মাথা রেখে ২ মিনিট শুয়ে থেকে তার ৩টি ভালো গুণের প্রশংসা করো।", duration: 2 },
+  { id: 7006, name: "স্লো মোশন ড্যান্স", description: "যেকোনো একটি রোমান্টিক গানে পার্টনারকে জড়িয়ে ধরে ২ মিনিট স্লো ড্যান্স করো।", duration: 2 },
+  { id: 7007, name: "গভীর সত্য সংলাপ", description: "পার্টনারের দুই হাত ধরে চোখের দিকে তাকিয়ে মনের গভীরের একটি চরম রোমান্টিক সত্য কথা বলো।", duration: 1 }
+];
+
 const DEFAULT_GAMES = [
   { id: 'spin', name: '🎡 মায়াবৃত্ত স্পিন গেম', description: 'বিভিন্ন চাকা ও ক্যাটেগরি স্পিন করে রোমান্টিক সংমিশ্রণ ফলাফল তৈরি করুন।', type: 'spin', enabled: true },
-  { id: 'dice', name: '🎲 ডাইস গেসিং গেম', description: 'ডাইস রোল করে সঠিক অনুমান করার খেলা। ভুল অনুমানের জন্য রোমান্টিক পেনাল্টি টাস্ক!', type: 'dice', enabled: true }
+  { id: 'dice', name: '🎲 ডাইস গেসিং গেম', description: 'ডাইস রোল করে সঠিক অনুমান করার খেলা। ভুল অনুমানের জন্য রোমান্টিক পেনাল্টি টাস্ক!', type: 'dice', enabled: true },
+  { id: 'truth_dare', name: '🤫 ট্রুথ অ্যান্ড ডেয়ার', description: 'সত্য বলা অথবা রোমান্টিক ডেয়ার সম্পন্ন করার খেলা। পার্টনারদের জন্য স্পেশাল!', type: 'truth_dare', enabled: true }
 ];
 
 // MAIN APP COMPONENT
@@ -351,6 +372,8 @@ function App() {
   // Derived structured task lists from categories
   const husbandTasks = categories.find(c => c.id === 'husband_tasks')?.items || [];
   const wifeTasks = categories.find(c => c.id === 'wife_tasks')?.items || [];
+  const truthTasks = categories.find(c => c.id === 'truth_tasks')?.items || [];
+  const dareTasks = categories.find(c => c.id === 'dare_tasks')?.items || [];
 
   // Dice Game Session State
   const [diceGameState, setDiceGameState] = useState('setup'); // 'setup', 'playing', 'result', 'penalty', 'ended'
@@ -383,6 +406,13 @@ function App() {
   // Admin Navigation Active Tab
   const [adminActiveTab, setAdminActiveTab] = useState('spin'); // 'spin', 'dice', 'new_game', 'github'
 
+  // Truth & Dare Game States
+  const [tdGameState, setTdGameState] = useState('setup'); // 'setup', 'playing', 'result'
+  const [tdCurrentTurn, setTdCurrentTurn] = useState('player1'); // 'player1' or 'player2'
+  const [tdSelectedType, setTdSelectedType] = useState(null); // 'truth' or 'dare'
+  const [tdActiveTask, setTdActiveTask] = useState(null);
+  const [tdUsedTasks, setTdUsedTasks] = useState([]);
+
   // Helper to extract image IDs
   const initializeImageIds = (cats) => {
     const imgIds = new Set();
@@ -413,7 +443,8 @@ function App() {
       } else {
         loadedGames = [
           { id: 'spin', name: '🎡 মায়াবৃত্ত স্পিন গেম', description: 'বিভিন্ন চাকা ও ক্যাটেগরি স্পিন করে রোমান্টিক সংমিশ্রণ ফলাফল তৈরি করুন।', type: 'spin', enabled: configData.showSpinGame !== undefined ? configData.showSpinGame : true },
-          { id: 'dice', name: '🎲 ডাইস গেসিং গেম', description: 'ডাইস রোল করে সঠিক অনুমান করার খেলা। ভুল অনুমানের জন্য রোমান্টিক পেনাল্টি টাস্ক!', type: 'dice', enabled: configData.showDiceGame !== undefined ? configData.showDiceGame : true }
+          { id: 'dice', name: '🎲 ডাইস গেসিং গেম', description: 'ডাইস রোল করে সঠিক অনুমান করার খেলা। ভুল অনুমানের জন্য রোমান্টিক পেনাল্টি টাস্ক!', type: 'dice', enabled: configData.showDiceGame !== undefined ? configData.showDiceGame : true },
+          { id: 'truth_dare', name: '🤫 ট্রুথ অ্যান্ড ডেয়ার', description: 'সত্য বলা অথবা রোমান্টিক ডেয়ার সম্পন্ন করার খেলা। পার্টনারদের জন্য স্পেশাল!', type: 'truth_dare', enabled: true }
         ];
       }
       setGames(loadedGames);
@@ -454,6 +485,44 @@ function App() {
       updatedCats.push({
         id: 'wife_tasks',
         name: '👩 মেয়ের পেনাল্টি টাস্ক',
+        enabled: true,
+        items: items
+      });
+    }
+
+    if (!updatedCats.some(c => c.id === 'truth_tasks')) {
+      let items = [];
+      if (configData && Array.isArray(configData.truthTasks)) {
+        items = configData.truthTasks.map((t, idx) => (
+          typeof t === 'object' && t !== null 
+            ? { id: t.id || (6000 + idx), name: t.name || '', description: t.description || '', url: t.url, filename: t.filename }
+            : { id: 6000 + idx, name: typeof t === 'string' ? t : '', description: '' }
+        ));
+      } else {
+        items = DEFAULT_TRUTH_TASKS;
+      }
+      updatedCats.push({
+        id: 'truth_tasks',
+        name: '🤫 ট্রুথ (সত্য) টাস্ক',
+        enabled: true,
+        items: items
+      });
+    }
+
+    if (!updatedCats.some(c => c.id === 'dare_tasks')) {
+      let items = [];
+      if (configData && Array.isArray(configData.dareTasks)) {
+        items = configData.dareTasks.map((t, idx) => (
+          typeof t === 'object' && t !== null 
+            ? { id: t.id || (7000 + idx), name: t.name || '', description: t.description || '', url: t.url, filename: t.filename, duration: t.duration }
+            : { id: 7000 + idx, name: typeof t === 'string' ? t : '', description: '', duration: 0 }
+        ));
+      } else {
+        items = DEFAULT_DARE_TASKS;
+      }
+      updatedCats.push({
+        id: 'dare_tasks',
+        name: '🔥 ডেয়ার (সাহস) টাস্ক',
         enabled: true,
         items: items
       });
@@ -2222,6 +2291,233 @@ function App() {
                   )}
                 </section>
               )}
+
+              {/* RENDER GAME 3: TRUTH AND DARE */}
+              {currentGame.type === 'truth_dare' && (
+                <section className="w-full flex flex-col gap-6 animate-fade-in text-center max-w-md mx-auto">
+                  
+                  {/* Setup Screen */}
+                  {tdGameState === 'setup' && (
+                    <div className="bg-slate-800 border border-slate-750 p-6 rounded-3xl shadow-xl space-y-6">
+                      <div className="text-center">
+                        <span className="text-4xl block mb-2">🤫</span>
+                        <h3 className="text-lg font-black text-white">ট্রুথ অ্যান্ড ডেয়ার গেম</h3>
+                        <p className="text-xs text-slate-400">সত্য বলা অথবা রোমান্টিক ডের সম্পন্ন করার খেলা</p>
+                      </div>
+
+                      <div className="space-y-4 text-left">
+                        <div>
+                          <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">১ম প্লেয়ারের নাম (ছেলে)</label>
+                          <input
+                            type="text"
+                            value={player1Name}
+                            onChange={(e) => setPlayer1Name(e.target.value)}
+                            placeholder="যেমন: সাকিব"
+                            className="w-full bg-slate-900 border border-slate-750 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">২য় প্লেয়ারের নাম (মেয়ে)</label>
+                          <input
+                            type="text"
+                            value={player2Name}
+                            onChange={(e) => setPlayer2Name(e.target.value)}
+                            placeholder="যেমন: শাকিলা"
+                            className="w-full bg-slate-900 border border-slate-750 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const p1 = player1Name.trim() || 'ছেলে';
+                          const p2 = player2Name.trim() || 'মেয়ে';
+                          setSessionPlayer1({ name: p1, gender: 'male' });
+                          setSessionPlayer2({ name: p2, gender: 'female' });
+                          
+                          // Choose random starting player
+                          const starter = Math.random() < 0.5 ? 'player1' : 'player2';
+                          setTdCurrentTurn(starter);
+                          setTdGameState('playing');
+                          setTdSelectedType(null);
+                          setTdActiveTask(null);
+                        }}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition shadow active:scale-95 text-xs"
+                      >
+                        খেলা শুরু করুন 🚀
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Playing Screen (Turn Choice) */}
+                  {tdGameState === 'playing' && (
+                    <div className="bg-slate-800 border border-slate-750 p-6 rounded-3xl shadow-xl space-y-6">
+                      <div className="text-center">
+                        <span className="text-[10px] bg-slate-900 text-slate-400 border border-slate-750 px-2 py-0.5 rounded-full font-bold">
+                          চলতি পালা
+                        </span>
+                        <h3 className="text-lg font-black text-white mt-2">
+                          {tdCurrentTurn === 'player1' ? `👦 ${sessionPlayer1.name}` : `👩 ${sessionPlayer2.name}`}-এর পালা!
+                        </h3>
+                        <p className="text-xs text-slate-400">নিচের যেকোনো একটি বেছে নিন:</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const pool = truthTasks;
+                            const available = pool.filter(t => !tdUsedTasks.includes(t.id));
+                            let selected = null;
+                            if (available.length > 0) {
+                              selected = available[Math.floor(Math.random() * available.length)];
+                            } else if (pool.length > 0) {
+                              selected = pool[Math.floor(Math.random() * pool.length)];
+                              setTdUsedTasks([selected.id]);
+                            }
+
+                            if (selected) {
+                              setTdUsedTasks(prev => [...prev, selected.id]);
+                              setTdActiveTask(selected);
+                              setTdSelectedType('truth');
+                              
+                              // Truths don't have timers
+                              setPenaltyTimer(null);
+                              setIsTimerRunning(false);
+                              
+                              setTdGameState('result');
+                              if (isMusicOn) playClickSound();
+                            } else {
+                              alert("এডিটর থেকে দয়া করে ট্রুথ প্রশ্ন যুক্ত করুন!");
+                            }
+                          }}
+                          className="bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-500/30 p-5 rounded-2xl flex flex-col items-center justify-center space-y-2 transition active:scale-95"
+                        >
+                          <span className="text-3xl">🤫</span>
+                          <span className="text-xs font-bold text-indigo-200">Truth (সত্য বলা)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const pool = dareTasks;
+                            const available = pool.filter(t => !tdUsedTasks.includes(t.id));
+                            let selected = null;
+                            if (available.length > 0) {
+                              selected = available[Math.floor(Math.random() * available.length)];
+                            } else if (pool.length > 0) {
+                              selected = pool[Math.floor(Math.random() * pool.length)];
+                              setTdUsedTasks([selected.id]);
+                            }
+
+                            if (selected) {
+                              setTdUsedTasks(prev => [...prev, selected.id]);
+                              setTdActiveTask(selected);
+                              setTdSelectedType('dare');
+                              
+                              // Start timer if configured
+                              const durationMin = selected.duration ? parseInt(selected.duration) : 0;
+                              if (durationMin > 0) {
+                                setPenaltyTimer(durationMin * 60);
+                                setIsTimerRunning(true);
+                              } else {
+                                setPenaltyTimer(null);
+                                setIsTimerRunning(false);
+                              }
+
+                              setTdGameState('result');
+                              if (isMusicOn) playClickSound();
+                            } else {
+                              alert("এডিটর থেকে দয়া করে ডেয়ার টাস্ক যুক্ত করুন!");
+                            }
+                          }}
+                          className="bg-rose-900/60 hover:bg-rose-800/80 border border-rose-500/30 p-5 rounded-2xl flex flex-col items-center justify-center space-y-2 transition active:scale-95"
+                        >
+                          <span className="text-3xl">🔥</span>
+                          <span className="text-xs font-bold text-rose-200">Dare (সাহস/কাজ)</span>
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setTdGameState('setup')}
+                        className="w-full bg-slate-750 hover:bg-slate-700 text-slate-350 py-2.5 rounded-xl font-bold text-xs transition active:scale-95"
+                      >
+                        খেলা বন্ধ করুন 🛑
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Result Screen */}
+                  {tdGameState === 'result' && tdActiveTask && (
+                    <div className="bg-slate-800 border border-slate-750 p-6 rounded-3xl shadow-xl space-y-6">
+                      <div className="text-center">
+                        <span className="inline-block bg-indigo-950 text-indigo-300 border border-indigo-500/20 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                          {tdSelectedType === 'truth' ? '🤫 TRUTH QUESTION' : '🔥 DARE TASK'}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-450 mt-3">
+                          {tdCurrentTurn === 'player1' ? `👦 ${sessionPlayer1.name}` : `👩 ${sessionPlayer2.name}`}-এর জন্য নির্ধারিত:
+                        </h4>
+                      </div>
+
+                      {/* Image if exists */}
+                      {tdActiveTask.url && (
+                        <div className="w-full max-w-[200px] aspect-[4/3] rounded-xl overflow-hidden border border-slate-700 mx-auto bg-slate-900">
+                          <img src={tdActiveTask.url} alt={tdActiveTask.name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+
+                      <h3 className="text-base font-black text-rose-350 tracking-wide leading-snug">
+                        {tdActiveTask.name}
+                      </h3>
+
+                      {tdActiveTask.description && (
+                        <p className="text-xs text-slate-400 font-medium px-4 py-2.5 bg-slate-900/40 rounded-xl border border-slate-750/30 leading-relaxed mx-auto max-w-sm">
+                          {tdActiveTask.description}
+                        </p>
+                      )}
+
+                      {/* Active Timer Display */}
+                      {penaltyTimer !== null && (
+                        <div className="w-fit mx-auto bg-slate-950/40 px-4 py-2 rounded-xl border border-slate-750/40 flex items-center space-x-2 animate-pulse">
+                          <span className="text-base">⏳</span>
+                          <div className="text-left">
+                            <span className="block text-[8px] text-slate-500 font-bold uppercase tracking-wider">টাস্ক সময় বাকি</span>
+                            <span className="text-base font-black text-rose-450 font-mono tracking-wide">{formatTimer(penaltyTimer)}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={penaltyTimer !== null && penaltyTimer > 0}
+                        onClick={() => {
+                          // Change turn and go back to playing
+                          setTdCurrentTurn(prev => prev === 'player1' ? 'player2' : 'player1');
+                          setTdGameState('playing');
+                          setTdActiveTask(null);
+                          setTdSelectedType(null);
+                          setPenaltyTimer(null);
+                          setIsTimerRunning(false);
+                        }}
+                        className={`w-full text-xs font-bold py-2.5 rounded-xl transition shadow active:scale-[0.98] ${
+                          penaltyTimer !== null && penaltyTimer > 0
+                            ? 'bg-slate-700 text-slate-450 border border-slate-750 cursor-not-allowed'
+                            : 'bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer'
+                        }`}
+                      >
+                        {penaltyTimer !== null && penaltyTimer > 0
+                          ? `⏳ অপেক্ষা করুন (${formatTimer(penaltyTimer)})`
+                          : 'টাস্ক সম্পন্ন হয়েছে ✅'
+                        }
+                      </button>
+                    </div>
+                  )}
+
+                </section>
+              )}
             </div>
           );
         })()}
@@ -2252,7 +2548,7 @@ function App() {
                     : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-750'
                 }`}
               >
-                <span>🎲 ডাইস গেম এডিটর</span>
+                <span>🎲 ডাইস ও ট্রুথ/ডেয়ার এডিটর</span>
               </button>
               <button
                 type="button"
@@ -3128,6 +3424,298 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                {/* 🤫 TRUTH TASKS EDITOR CARD */}
+                {categories.find(c => c.id === 'truth_tasks') && (() => {
+                  const truthCat = categories.find(c => c.id === 'truth_tasks');
+                  return (
+                    <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md space-y-4">
+                      <div className="border-b border-slate-750 pb-3 flex items-center justify-between">
+                        <h4 className="text-sm font-extrabold text-indigo-350">🤫 ট্রুথ (সত্য) প্রশ্ন তালিকা</h4>
+                        <span className="text-[10px] bg-indigo-950/40 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold">
+                          মোট: {truthTasks.length} টি
+                        </span>
+                      </div>
+
+                      {/* Add Task Form */}
+                      <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-755/60 space-y-2">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">নতুন ট্রুথ প্রশ্ন যোগ করুন</span>
+                        <input
+                          type="text"
+                          value={(newItemsText['truth_tasks'] && newItemsText['truth_tasks'].name) || ''}
+                          onChange={(e) => setNewItemsText(prev => ({
+                            ...prev,
+                            ['truth_tasks']: { ...(prev['truth_tasks'] || {}), name: e.target.value }
+                          }))}
+                          className="w-full bg-slate-850 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                          placeholder="প্রশ্ন টাইটেল"
+                        />
+                        <input
+                          type="text"
+                          value={(newItemsText['truth_tasks'] && newItemsText['truth_tasks'].description) || ''}
+                          onChange={(e) => setNewItemsText(prev => ({
+                            ...prev,
+                            ['truth_tasks']: { ...(prev['truth_tasks'] || {}), description: e.target.value }
+                          }))}
+                          className="w-full bg-slate-850 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                          placeholder="বিস্তারিত বিবরণ / বর্ণনা (ঐচ্ছিক)"
+                        />
+                        <div className="flex items-center space-x-2 bg-slate-850 p-2 rounded-xl border border-slate-750">
+                          <span className="text-[10px] text-slate-450 font-bold shrink-0">ছবি (ঐচ্ছিক):</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                setAddItemFile(prev => ({ ...prev, ['truth_tasks']: file }));
+                              }
+                            }}
+                            className="text-xs text-slate-500 cursor-pointer w-full"
+                          />
+                        </div>
+                        {addItemFile['truth_tasks'] && (
+                          <div className="flex items-center justify-between bg-slate-950/40 px-3 py-1.5 rounded-lg border border-slate-750">
+                            <span className="text-[10px] text-emerald-400 truncate max-w-[200px]">
+                              {addItemFile['truth_tasks'].name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setAddItemFile(prev => {
+                                const next = { ...prev };
+                                delete next['truth_tasks'];
+                                return next;
+                              })}
+                              className="text-[9px] text-rose-400 hover:underline"
+                            >
+                              সরান
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleAddItem('truth_tasks')}
+                          className="w-full bg-indigo-650 hover:bg-indigo-500 text-white text-xs font-bold py-2 rounded-xl transition shadow active:scale-[0.98]"
+                        >
+                          প্রশ্ন যোগ করুন ➕
+                        </button>
+                      </div>
+
+                      {/* Tasks List */}
+                      <div className="overflow-y-auto space-y-2 max-h-[300px] pr-1.5 custom-scrollbar">
+                        {truthTasks.length === 0 ? (
+                          <p className="text-center text-xs text-slate-500 italic py-6">কোনো প্রশ্ন যুক্ত করা নেই</p>
+                        ) : (
+                          truthTasks.map((item, itemIdx) => {
+                            const isImage = typeof item === 'object' && item !== null && item.url;
+                            const nameVal = typeof item === 'object' && item !== null ? item.name : item;
+                            const descVal = typeof item === 'object' && item !== null ? item.description : '';
+                            
+                            return (
+                              <div key={item.id || itemIdx} className="bg-slate-900/30 border border-slate-750/50 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                                <div className="flex items-center space-x-2.5 min-w-0">
+                                  <span className="text-[10px] text-slate-500 font-bold">{(itemIdx + 1)}</span>
+                                  {isImage && (
+                                    <img 
+                                      src={item.url} 
+                                      alt={nameVal} 
+                                      className="w-8 h-8 object-cover rounded-lg border border-slate-750" 
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-bold text-slate-200 truncate max-w-[140px] sm:max-w-[180px]">{nameVal}</span>
+                                    {descVal && <span className="text-[10px] text-slate-500 truncate max-w-[140px] sm:max-w-[180px]">{descVal}</span>}
+                                  </div>
+                                </div>
+
+                                <div className="flex space-x-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingImage({
+                                      categoryId: 'truth_tasks',
+                                      imageItem: { id: item.id || itemIdx, name: nameVal, description: descVal, url: isImage ? item.url : null }
+                                    })}
+                                    className="text-slate-500 hover:text-indigo-400 p-1"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => isImage ? handleDeleteImageItem('truth_tasks', item.id) : handleDeleteItem('truth_tasks', itemIdx)}
+                                    className="text-slate-500 hover:text-rose-450 p-1"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 🔥 DARE TASKS EDITOR CARD */}
+                {categories.find(c => c.id === 'dare_tasks') && (() => {
+                  const dareCat = categories.find(c => c.id === 'dare_tasks');
+                  return (
+                    <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md space-y-4">
+                      <div className="border-b border-slate-750 pb-3 flex items-center justify-between">
+                        <h4 className="text-sm font-extrabold text-rose-350">🔥 ডেয়ার (কাজ) প্রশ্ন তালিকা</h4>
+                        <span className="text-[10px] bg-rose-950/40 text-rose-300 border border-rose-500/20 px-2 py-0.5 rounded-full font-bold">
+                          মোট: {dareTasks.length} টি
+                        </span>
+                      </div>
+
+                      {/* Add Task Form */}
+                      <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-755/60 space-y-2">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">নতুন ডেয়ার টাস্ক যোগ করুন</span>
+                        <input
+                          type="text"
+                          value={(newItemsText['dare_tasks'] && newItemsText['dare_tasks'].name) || ''}
+                          onChange={(e) => setNewItemsText(prev => ({
+                            ...prev,
+                            ['dare_tasks']: { ...(prev['dare_tasks'] || {}), name: e.target.value }
+                          }))}
+                          className="w-full bg-slate-855 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-rose-500 transition"
+                          placeholder="টাস্ক টাইটেল"
+                        />
+                        <input
+                          type="text"
+                          value={(newItemsText['dare_tasks'] && newItemsText['dare_tasks'].description) || ''}
+                          onChange={(e) => setNewItemsText(prev => ({
+                            ...prev,
+                            ['dare_tasks']: { ...(prev['dare_tasks'] || {}), description: e.target.value }
+                          }))}
+                          className="w-full bg-slate-855 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-rose-500 transition"
+                          placeholder="বিস্তারিত বিবরণ / বর্ণনা (ঐচ্ছিক)"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          value={(newItemsText['dare_tasks'] && newItemsText['dare_tasks'].duration) || ''}
+                          onChange={(e) => setNewItemsText(prev => ({
+                            ...prev,
+                            ['dare_tasks']: { ...(prev['dare_tasks'] || {}), duration: e.target.value }
+                          }))}
+                          className="w-full bg-slate-855 text-white border border-slate-700 px-3 py-2 rounded-xl text-xs outline-none focus:ring-1 focus:ring-rose-500 transition"
+                          placeholder="সময় লিমিট (মিনিট, ফাঁকা থাকলে লিমিট নেই)"
+                        />
+                        <div className="flex items-center space-x-2 bg-slate-855 p-2 rounded-xl border border-slate-750">
+                          <span className="text-[10px] text-slate-450 font-bold shrink-0">ছবি (ঐচ্ছিক):</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                setAddItemFile(prev => ({ ...prev, ['dare_tasks']: file }));
+                              }
+                            }}
+                            className="text-xs text-slate-500 cursor-pointer w-full"
+                          />
+                        </div>
+                        {addItemFile['dare_tasks'] && (
+                          <div className="flex items-center justify-between bg-slate-950/40 px-3 py-1.5 rounded-lg border border-slate-750">
+                            <span className="text-[10px] text-emerald-400 truncate max-w-[200px]">
+                              {addItemFile['dare_tasks'].name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setAddItemFile(prev => {
+                                const next = { ...prev };
+                                delete next['dare_tasks'];
+                                return next;
+                              })}
+                              className="text-[9px] text-rose-450 hover:underline"
+                            >
+                              সরান
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleAddItem('dare_tasks')}
+                          className="w-full bg-rose-650 hover:bg-rose-550 text-white text-xs font-bold py-2 rounded-xl transition shadow active:scale-[0.98]"
+                        >
+                          ডেয়ার যোগ করুন ➕
+                        </button>
+                      </div>
+
+                      {/* Tasks List */}
+                      <div className="overflow-y-auto space-y-2 max-h-[300px] pr-1.5 custom-scrollbar">
+                        {dareTasks.length === 0 ? (
+                          <p className="text-center text-xs text-slate-500 italic py-6">কোনো ডেয়ার যুক্ত করা নেই</p>
+                        ) : (
+                          dareTasks.map((item, itemIdx) => {
+                            const isImage = typeof item === 'object' && item !== null && item.url;
+                            const nameVal = typeof item === 'object' && item !== null ? item.name : item;
+                            const descVal = typeof item === 'object' && item !== null ? item.description : '';
+                            const durVal = typeof item === 'object' && item !== null ? item.duration : 0;
+                            
+                            return (
+                              <div key={item.id || itemIdx} className="bg-slate-900/30 border border-slate-750/50 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                                <div className="flex items-center space-x-2.5 min-w-0">
+                                  <span className="text-[10px] text-slate-500 font-bold">{(itemIdx + 1)}</span>
+                                  {isImage && (
+                                    <img 
+                                      src={item.url} 
+                                      alt={nameVal} 
+                                      className="w-8 h-8 object-cover rounded-lg border border-slate-750" 
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-bold text-slate-200 truncate max-w-[140px] sm:max-w-[180px]">{nameVal}</span>
+                                    {(descVal || durVal > 0) && (
+                                      <span className="text-[10px] text-slate-500 truncate max-w-[140px] sm:max-w-[180px]">
+                                        {durVal > 0 ? `⏳ ${durVal}মি. | ` : ''}{descVal}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex space-x-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingImage({
+                                      categoryId: 'dare_tasks',
+                                      imageItem: { id: item.id || itemIdx, name: nameVal, description: descVal, url: isImage ? item.url : null, duration: durVal }
+                                    })}
+                                    className="text-slate-500 hover:text-indigo-400 p-1"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => isImage ? handleDeleteImageItem('dare_tasks', item.id) : handleDeleteItem('dare_tasks', itemIdx)}
+                                    className="text-slate-500 hover:text-rose-450 p-1"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
