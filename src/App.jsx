@@ -379,6 +379,9 @@ function App() {
   // Penalty Timer States
   const [penaltyTimer, setPenaltyTimer] = useState(null); // null or number of seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  
+  // Admin Navigation Active Tab
+  const [adminActiveTab, setAdminActiveTab] = useState('spin'); // 'spin', 'dice', 'new_game', 'github'
 
   // Helper to extract image IDs
   const initializeImageIds = (cats) => {
@@ -2227,8 +2230,57 @@ function App() {
         {showControlBoard && (
           <section className="w-full flex flex-col gap-8">
             
+            {/* Admin Tabs Row */}
+            <div className="flex flex-wrap gap-2 border-b border-slate-700 pb-4">
+              <button
+                type="button"
+                onClick={() => setAdminActiveTab('spin')}
+                className={`flex-1 min-w-[140px] py-3 rounded-2xl font-bold text-xs md:text-sm transition flex items-center justify-center space-x-1.5 ${
+                  adminActiveTab === 'spin'
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-750'
+                }`}
+              >
+                <span>🎡 স্পিন গেম এডিটর</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminActiveTab('dice')}
+                className={`flex-1 min-w-[140px] py-3 rounded-2xl font-bold text-xs md:text-sm transition flex items-center justify-center space-x-1.5 ${
+                  adminActiveTab === 'dice'
+                    ? 'bg-rose-600 text-white shadow-lg'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-750'
+                }`}
+              >
+                <span>🎲 ডাইস গেম এডিটর</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminActiveTab('new_game')}
+                className={`flex-1 min-w-[140px] py-3 rounded-2xl font-bold text-xs md:text-sm transition flex items-center justify-center space-x-1.5 ${
+                  adminActiveTab === 'new_game'
+                    ? 'bg-emerald-600 text-white shadow-lg'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-750'
+                }`}
+              >
+                <span>➕ নতুন গেম যুক্ত করুন</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminActiveTab('github')}
+                className={`flex-1 min-w-[140px] py-3 rounded-2xl font-bold text-xs md:text-sm transition flex items-center justify-center space-x-1.5 ${
+                  adminActiveTab === 'github'
+                    ? 'bg-slate-700 text-white shadow-lg border border-indigo-500/35'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-750'
+                }`}
+              >
+                <span>☁️ গিটহাব ও ক্লাউড সিঙ্ক</span>
+              </button>
+            </div>
+
             {/* CATEGORIES MANAGEMENT & CONTROL BOARD */}
-            <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md">
+            {adminActiveTab === 'spin' && (
+              <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-700 pb-3 mb-6 gap-3">
                 <div>
                   <h2 className="text-lg font-extrabold text-white">চাকা ও ক্যাটেগরি কন্ট্রোল বোর্ড</h2>
@@ -2593,9 +2645,11 @@ function App() {
               ))}
             </div>
           </div>
+        )}
 
             {/* GAME ACTIVATION & VISIBILITY CONTROL */}
-            <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md space-y-6">
+            {adminActiveTab === 'new_game' && (
+              <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md space-y-6">
               <div>
                 <h3 className="text-base font-extrabold text-white mb-1">🎮 গেম ও গেমপ্লে ম্যানেজার</h3>
                 <p className="text-xs text-slate-400 font-medium">নতুন গেম তৈরি করুন, সক্রিয়/নিষ্ক্রিয় করুন অথবা ডিলিট করুন</p>
@@ -2687,10 +2741,18 @@ function App() {
                 </button>
               </form>
             </div>
+          )}
 
             {/* GITHUB SYNC & GO LIVE DEPLOYMENT PANEL */}
-            {!isDev && (
-              <div className="bg-slate-800 p-6 rounded-3xl border border-rose-500/20 shadow-md space-y-6 animate-scale-up">
+            {adminActiveTab === 'github' && (
+              isDev ? (
+                <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md text-center py-10">
+                  <span className="text-3xl block mb-2">💻</span>
+                  <h3 className="text-base font-extrabold text-white mb-1">লোকাল হোস্ট মোড</h3>
+                  <p className="text-xs text-slate-400">লোকাল হোস্টে করা কাস্টমাইজেশন সরাসরি লোকাল ফাইলে সেভ হয়, তাই গিটহাব সিঙ্কের প্রয়োজন নেই।</p>
+                </div>
+              ) : (
+                <div className="bg-slate-800 p-6 rounded-3xl border border-rose-500/20 shadow-md space-y-6 animate-scale-up">
                 <div>
                   <h3 className="text-base font-extrabold text-white mb-1">☁️ গিটহাব সিঙ্ক ও ক্লাউড ডেপ্লয়মেন্ট (Go Live)</h3>
                   <p className="text-xs text-slate-400 font-medium">মোবাইল বা যেকোনো ডিভাইস থেকে করা কাস্টমাইজেশন সরাসরি লাইভ সার্ভারে সেভ করুন</p>
@@ -2760,11 +2822,13 @@ function App() {
                   </button>
                 </form>
               </div>
-            )}
+            )
+          )}
 
 
             {/* DICE GAME PENALTY TASKS EDITOR */}
-            <div className="space-y-6">
+            {adminActiveTab === 'dice' && (
+              <div className="space-y-6">
               <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md">
                 <h3 className="text-base font-extrabold text-white mb-1">🎲 ডাইস গেম পেনাল্টি টাস্ক কাস্টমাইজেশন</h3>
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
@@ -3066,6 +3130,7 @@ function App() {
                 )}
               </div>
             </div>
+          )}
           </section>
       )}
     </main>
