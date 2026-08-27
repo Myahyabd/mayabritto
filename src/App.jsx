@@ -463,29 +463,35 @@ function App() {
   // Fetch configs on load
   useEffect(() => {
     if (isAuthenticated) {
-      // 1. Check localStorage first
-      const localConfig = localStorage.getItem('spinner_custom_config');
-      if (localConfig) {
-        try {
-          const parsed = JSON.parse(localConfig);
-          applyLoadedConfig(parsed);
-          return;
-        } catch (e) {
-          console.error("Failed to parse local config:", e);
-        }
-      }
-
-      // 2. Fetch from server configuration file
+      // 1. Try to fetch from server configuration file (Source of Truth)
       fetch('/uploads/config.json?t=' + Date.now())
         .then(res => {
-          if (!res.ok) throw new Error('No config found');
+          if (!res.ok) throw new Error('No config found on server');
           return res.json();
         })
         .then(data => {
           applyLoadedConfig(data);
+          // Keep localStorage updated with server
+          localStorage.setItem('spinner_custom_config', JSON.stringify(data));
         })
         .catch(err => {
-          console.warn("Could not load categories configuration:", err);
+          console.warn("Could not load config from server, falling back to localStorage:", err);
+          
+          // 2. Fallback to localStorage if server fails
+          const localConfig = localStorage.getItem('spinner_custom_config');
+          if (localConfig) {
+            try {
+              const parsed = JSON.parse(localConfig);
+              applyLoadedConfig(parsed);
+            } catch (e) {
+              console.error("Failed to parse local config:", e);
+              // 3. Fallback to default configs
+              applyLoadedConfig(null);
+            }
+          } else {
+            // 3. Fallback to default configs
+            applyLoadedConfig(null);
+          }
         });
     }
   }, [isAuthenticated]);
