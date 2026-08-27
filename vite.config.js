@@ -125,7 +125,7 @@ function localUploadPlugin() {
           req.on('end', () => {
             try {
               const data = JSON.parse(body);
-              const { categoryId, name, dataUrl, description } = data;
+              const { categoryId, name, dataUrl, description, duration } = data;
               
               const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
               if (!matches || matches.length !== 3) {
@@ -149,6 +149,7 @@ function localUploadPlugin() {
                 id: Date.now() + Math.floor(Math.random() * 1000),
                 name: name,
                 description: description || '',
+                duration: duration ? parseInt(duration) : 0,
                 filename: filename,
                 url: `/uploads/${filename}`
               };
@@ -227,7 +228,7 @@ function localUploadPlugin() {
           req.on('end', () => {
             try {
               const data = JSON.parse(body);
-              const { categoryId, id, name, description, dataUrl } = data;
+              const { categoryId, id, name, description, duration, dataUrl } = data;
               
               const currentConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
               let updatedItem = null;
@@ -236,8 +237,10 @@ function localUploadPlugin() {
                 if (cat.id === categoryId) {
                   return {
                     ...cat,
-                    items: cat.items.map(item => {
-                      if (item.id === id) {
+                    items: (cat.items || []).map(item => {
+                      // Safe check: handle if item is a string or null
+                      const itemId = (typeof item === 'object' && item !== null) ? item.id : item;
+                      if (itemId === id) {
                         let filename = item.filename;
                         let url = item.url;
 
@@ -269,10 +272,11 @@ function localUploadPlugin() {
                         }
 
                         updatedItem = {
-                          ...item,
+                          ...(typeof item === 'object' && item !== null ? item : {}),
                           id,
                           name,
                           description: description || '',
+                          duration: duration ? parseInt(duration) : 0,
                           filename,
                           url
                         };
