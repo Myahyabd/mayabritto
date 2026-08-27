@@ -2053,8 +2053,13 @@ function App() {
                                     <strong>{h.player}</strong> {h.guess} অনুমান করেছিলেন, ডাইসে <strong>{h.roll}</strong> এসেছে।
                                   </p>
                                   {h.result === 'penalty' && h.task && (
-                                    <div className="bg-rose-950/20 border border-rose-500/10 p-2.5 rounded-xl text-[10px] text-rose-350 leading-relaxed font-semibold">
-                                      🤫 পেনাল্টি টাস্ক: <strong>{h.task.name}</strong>
+                                    <div 
+                                      onClick={() => setDetailViewItem({ categoryName: 'পেনাল্টি টাস্ক', item: h.task })}
+                                      className="bg-rose-950/20 hover:bg-rose-900/40 border border-rose-500/10 p-2.5 rounded-xl text-[10px] text-rose-350 leading-relaxed font-semibold cursor-pointer transition flex items-center justify-between group"
+                                      title="টাস্কের বিবরণ ও ছবি দেখতে ক্লিক করুন"
+                                    >
+                                      <span>🤫 পেনাল্টি টাস্ক: <strong>{h.task.name}</strong></span>
+                                      <span className="text-[9px] text-rose-400/80 group-hover:text-rose-300 transition shrink-0 ml-2">বিস্তারিত 👁️</span>
                                     </div>
                                   )}
                                 </div>
