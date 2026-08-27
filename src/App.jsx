@@ -3050,18 +3050,17 @@ function App() {
 
             {/* GITHUB SYNC & GO LIVE DEPLOYMENT PANEL */}
             {adminActiveTab === 'github' && (
-              isDev ? (
-                <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-md text-center py-10">
-                  <span className="text-3xl block mb-2">💻</span>
-                  <h3 className="text-base font-extrabold text-white mb-1">লোকাল হোস্ট মোড</h3>
-                  <p className="text-xs text-slate-400">লোকাল হোস্টে করা কাস্টমাইজেশন সরাসরি লোকাল ফাইলে সেভ হয়, তাই গিটহাব সিঙ্কের প্রয়োজন নেই।</p>
-                </div>
-              ) : (
-                <div className="bg-slate-800 p-6 rounded-3xl border border-rose-500/20 shadow-md space-y-6 animate-scale-up">
+              <div className="bg-slate-800 p-6 rounded-3xl border border-rose-500/20 shadow-md space-y-6 animate-scale-up">
                 <div>
                   <h3 className="text-base font-extrabold text-white mb-1">☁️ গিটহাব সিঙ্ক ও ক্লাউড ডেপ্লয়মেন্ট (Go Live)</h3>
                   <p className="text-xs text-slate-400 font-medium">মোবাইল বা যেকোনো ডিভাইস থেকে করা কাস্টমাইজেশন সরাসরি লাইভ সার্ভারে সেভ করুন</p>
                 </div>
+
+                {isDev && (
+                  <div className="bg-emerald-950/40 border border-emerald-500/20 p-4 rounded-2xl text-xs text-emerald-450 leading-relaxed font-semibold">
+                    ℹ️ লোকাল হোস্ট মোড সক্রিয়: লোকাল হোস্টে করা কাস্টমাইজেশন সরাসরি লোকাল ফাইলে সেভ হয়। তবে আপনি চাইলে এখান থেকে সরাসরি আপনার গিটহাব রিপোজিটরিতে ডেটা সিঙ্ক (পুশ) করে নেটলিফাই বা হোস্টিংয়ে লাইভ ডেপ্লয়মেন্ট ট্রিগার করতে পারেন!
+                  </div>
+                )}
 
                 <form onSubmit={handleSyncToGitHub} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -3127,8 +3126,7 @@ function App() {
                   </button>
                 </form>
               </div>
-            )
-          )}
+            )}
 
 
             {/* DICE GAME PENALTY TASKS EDITOR */}
