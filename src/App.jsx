@@ -354,14 +354,27 @@ function App() {
 
   // Dice Game Session State
   const [diceGameState, setDiceGameState] = useState('setup'); // 'setup', 'playing', 'result', 'penalty', 'ended'
-  const [diceTotalRounds, setDiceTotalRounds] = useState(10);
+  const [diceTotalRounds, setDiceTotalRounds] = useState(6); // Default 6 rounds (even number)
   const [diceCurrentRound, setDiceCurrentRound] = useState(1);
-  const [diceCurrentTurn, setDiceCurrentTurn] = useState('wife'); // 'wife' or 'husband'
+  const [diceCurrentTurn, setDiceCurrentTurn] = useState('player1'); // 'player1' or 'player2'
   const [diceRolledNumber, setDiceRolledNumber] = useState(null);
   const [isDiceRolling, setIsDiceRolling] = useState(false);
   const [activePenaltyTask, setActivePenaltyTask] = useState(null);
   const [usedTasks, setUsedTasks] = useState([]); // Array of strings/objects (used tasks)
   const [diceRoundHistory, setDiceRoundHistory] = useState([]); // History array for display
+
+  // Custom Player Profile States
+  const [player1Name, setPlayer1Name] = useState('ছেলে');
+  const [player1Gender, setPlayer1Gender] = useState('male');
+  const [player2Name, setPlayer2Name] = useState('মেয়ে');
+  const [player2Gender, setPlayer2Gender] = useState('female');
+  
+  // Custom active player profile tracking states for the game session
+  const [sessionPlayer1, setSessionPlayer1] = useState({ name: 'ছেলে', gender: 'male' });
+  const [sessionPlayer2, setSessionPlayer2] = useState({ name: 'মেয়ে', gender: 'female' });
+  const [diceGuessedNumber, setDiceGuessedNumber] = useState(null);
+  const [isCustomRounds, setIsCustomRounds] = useState(false);
+  const [customRoundsInput, setCustomRoundsInput] = useState('6');
 
   // Helper to extract image IDs
   const initializeImageIds = (cats) => {
@@ -662,22 +675,40 @@ function App() {
 
 
   // --- DICE GAME LOGIC ---
-  const handleStartDiceGame = (rounds, startingTurn) => {
-    setDiceTotalRounds(rounds);
+  const getPlayerTaskPool = (playerKey) => {
+    const player = playerKey === 'player1' ? sessionPlayer1 : sessionPlayer2;
+    return player.gender === 'female' ? wifeTasks : husbandTasks;
+  };
+
+  const handleStartDiceGame = (rounds) => {
+    // 1. Setup session player details
+    const p1 = { name: player1Name.trim() || 'ছেলে', gender: player1Gender };
+    const p2 = { name: player2Name.trim() || 'মেয়ে', gender: player2Gender };
+    setSessionPlayer1(p1);
+    setSessionPlayer2(p2);
+
+    // 2. Decide starting player randomly
+    const startingPlayer = Math.random() < 0.5 ? 'player1' : 'player2';
+    setDiceCurrentTurn(startingPlayer);
+
+    // 3. Ensure rounds count is even
+    const parsedRounds = parseInt(rounds) || 6;
+    const finalRounds = Math.max(2, parsedRounds % 2 === 0 ? parsedRounds : parsedRounds + 1);
+
+    setDiceTotalRounds(finalRounds);
     setDiceCurrentRound(1);
-    setDiceCurrentTurn(startingTurn);
     setDiceGameState('playing');
     setDiceRolledNumber(null);
+    setDiceGuessedNumber(null);
     setActivePenaltyTask(null);
     setUsedTasks([]);
     setDiceRoundHistory([]);
   };
 
   const handleRollDice = () => {
-    if (isDiceRolling) return;
+    if (isDiceRolling || diceGuessedNumber === null) return;
     setIsDiceRolling(true);
     setDiceRolledNumber(null);
-    setDiceGameState('playing'); // Ensure status
     
     // Simulate dice rolling with rapid random face updates
     let count = 0;
@@ -690,36 +721,46 @@ function App() {
         const finalRoll = Math.floor(Math.random() * 6) + 1;
         setDiceRolledNumber(finalRoll);
         setIsDiceRolling(false);
-        setDiceGameState('result');
+        
+        // Auto compare roll with guess
+        const isRight = finalRoll === diceGuessedNumber;
+        
+        setTimeout(() => {
+          handleDiceGuessResult(isRight, finalRoll);
+        }, 1200);
       }
     }, 100);
   };
 
-  const handleDiceGuessResult = (isRight) => {
+  const handleDiceGuessResult = (isRight, finalRoll) => {
+    const activePlayer = diceCurrentTurn === 'player1' ? sessionPlayer1 : sessionPlayer2;
+
     if (isRight) {
       // Record history
       const historyItem = {
         round: diceCurrentRound,
-        player: diceCurrentTurn,
-        roll: diceRolledNumber,
+        player: activePlayer.name,
+        guess: diceGuessedNumber,
+        roll: finalRoll,
         result: 'correct'
       };
       setDiceRoundHistory(prev => [historyItem, ...prev]);
 
+      alert(`🎉 সঠিক অনুমান! ${activePlayer.name} ${diceGuessedNumber} অনুমান করেছিলেন এবং ডাইসেও ${finalRoll} উঠেছে!`);
+
       // Move to next turn
       advanceDiceTurn();
     } else {
-      // Draw random penalty task
-      const pool = diceCurrentTurn === 'wife' ? wifeTasks : husbandTasks;
+      // Draw random penalty task based on the current player's gender
+      const pool = getPlayerTaskPool(diceCurrentTurn);
       const available = pool.filter(task => !usedTasks.includes(task.id));
       
       let selectedTask = null;
       if (available.length > 0) {
         selectedTask = available[Math.floor(Math.random() * available.length)];
       } else if (pool.length > 0) {
-        // Fallback if all tasks are used, reset the pool
         selectedTask = pool[Math.floor(Math.random() * pool.length)];
-        setUsedTasks([selectedTask.id]); // reset used list with this task
+        setUsedTasks([selectedTask.id]); // reset pool tracking with this one
       }
 
       if (selectedTask) {
@@ -727,7 +768,6 @@ function App() {
         setActivePenaltyTask(selectedTask);
         setDiceGameState('penalty');
       } else {
-        // No tasks configured fallback
         alert("অ্যাডমিন প্যানেল থেকে অনুগ্রহ করে ডাইস গেমের টাস্ক তালিকা যুক্ত করুন!");
         advanceDiceTurn();
       }
@@ -735,10 +775,13 @@ function App() {
   };
 
   const handleCompletePenalty = () => {
+    const activePlayer = diceCurrentTurn === 'player1' ? sessionPlayer1 : sessionPlayer2;
+
     // Record history
     const historyItem = {
       round: diceCurrentRound,
-      player: diceCurrentTurn,
+      player: activePlayer.name,
+      guess: diceGuessedNumber,
       roll: diceRolledNumber,
       result: 'penalty',
       task: activePenaltyTask
@@ -751,14 +794,15 @@ function App() {
 
   const advanceDiceTurn = () => {
     // Check if game has ended
-    if (diceTotalRounds !== 'unlimited' && diceCurrentRound >= diceTotalRounds) {
+    if (diceCurrentRound >= diceTotalRounds) {
       setDiceGameState('ended');
       if (isMusicOn) playCelebrationSound();
     } else {
       setDiceCurrentRound(prev => prev + 1);
-      setDiceCurrentTurn(prev => prev === 'wife' ? 'husband' : 'wife');
+      setDiceCurrentTurn(prev => prev === 'player1' ? 'player2' : 'player1');
       setDiceGameState('playing');
       setDiceRolledNumber(null);
+      setDiceGuessedNumber(null);
       setActivePenaltyTask(null);
     }
   };
@@ -1610,66 +1654,144 @@ function App() {
                           </g>
                         </svg>
                       </div>
+                      
                       <h2 className="text-2xl font-black text-white mb-2">{currentGame.name} 🎲</h2>
-                      <p className="text-xs text-slate-400 mb-6 font-medium">
-                        পর্যায়ক্রমে ডাইস রোল করুন। সঠিক অনুমান করতে পারলে পার্টনারের পালা আসবে, আর ভুল হলে সুন্দর রোমান্টিক পেনাল্টি টাস্ক সম্পূর্ণ করতে হবে!
+                      <p className="text-xs text-slate-400 mb-6 font-medium leading-relaxed">
+                        প্লেয়ারদের নাম ও জেন্ডার দিয়ে খেলা শুরু করুন। সঠিক অনুমান করতে পারলে পার্টনারের পালা আসবে, ভুল অনুমানের জন্য রোমান্টিক পেনাল্টি টাস্ক!
                       </p>
 
-                      <div className="space-y-5 text-left bg-slate-900/40 p-5 rounded-2xl border border-slate-750 mb-6">
-                        {/* Total Rounds */}
+                      {/* Player Names & Genders */}
+                      <div className="space-y-4 bg-slate-900/40 p-5 rounded-2xl border border-slate-750 mb-6 text-left">
+                        <span className="text-xs font-black text-white block border-b border-slate-800 pb-2 mb-3">👥 প্লেয়ারদের পরিচিতি</span>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {/* Player 1 */}
+                          <div className="space-y-2">
+                            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">প্লেয়ার ১ (নাম)</label>
+                            <input
+                              type="text"
+                              value={player1Name}
+                              onChange={(e) => setPlayer1Name(e.target.value)}
+                              placeholder="যেমন: সাকিব"
+                              className="w-full bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                            />
+                            
+                            <div className="flex items-center space-x-3 mt-1.5">
+                              <label className="flex items-center space-x-1.5 text-xs text-slate-350 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="p1gender"
+                                  checked={player1Gender === 'male'}
+                                  onChange={() => setPlayer1Gender('male')}
+                                  className="w-3.5 h-3.5 text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500"
+                                />
+                                <span>👨 ছেলে</span>
+                              </label>
+                              <label className="flex items-center space-x-1.5 text-xs text-slate-350 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="p1gender"
+                                  checked={player1Gender === 'female'}
+                                  onChange={() => setPlayer1Gender('female')}
+                                  className="w-3.5 h-3.5 text-rose-650 bg-slate-800 border-slate-700 focus:ring-rose-500"
+                                />
+                                <span>👩 মেয়ে</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Player 2 */}
+                          <div className="space-y-2">
+                            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">প্লেয়ার ২ (নাম)</label>
+                            <input
+                              type="text"
+                              value={player2Name}
+                              onChange={(e) => setPlayer2Name(e.target.value)}
+                              placeholder="যেমন: নুশাত"
+                              className="w-full bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                            />
+                            
+                            <div className="flex items-center space-x-3 mt-1.5">
+                              <label className="flex items-center space-x-1.5 text-xs text-slate-350 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="p2gender"
+                                  checked={player2Gender === 'male'}
+                                  onChange={() => setPlayer2Gender('male')}
+                                  className="w-3.5 h-3.5 text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500"
+                                />
+                                <span>👨 ছেলে</span>
+                              </label>
+                              <label className="flex items-center space-x-1.5 text-xs text-slate-350 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="p2gender"
+                                  checked={player2Gender === 'female'}
+                                  onChange={() => setPlayer2Gender('female')}
+                                  className="w-3.5 h-3.5 text-rose-650 bg-slate-800 border-slate-700 focus:ring-rose-500"
+                                />
+                                <span>👩 মেয়ে</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Rounds Setup */}
+                      <div className="space-y-4 text-left bg-slate-900/40 p-5 rounded-2xl border border-slate-750 mb-6">
                         <div>
                           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">খেলার রাউন্ড সংখ্যা</label>
                           <div className="grid grid-cols-4 gap-2">
-                            {[5, 10, 12, 'unlimited'].map(r => (
+                            {[6, 10, 20].map(r => (
                               <button
                                 key={r}
                                 type="button"
-                                onClick={() => setDiceTotalRounds(r)}
-                                className={`py-2 text-xs font-bold rounded-xl transition border ${
-                                  diceTotalRounds === r
-                                    ? 'bg-indigo-600 border-indigo-500 text-white shadow'
-                                    : 'bg-slate-800 border-slate-750 text-slate-400 hover:text-slate-200'
-                                }`}
+                                onClick={() => {
+                                  setDiceTotalRounds(r);
+                                  setIsCustomRounds(false);
+                                }}
+                                className={!isCustomRounds && diceTotalRounds === r
+                                  ? 'py-2 text-xs font-bold rounded-xl transition border bg-indigo-600 border-indigo-500 text-white shadow'
+                                  : 'py-2 text-xs font-bold rounded-xl transition border bg-slate-800 border-slate-750 text-slate-400 hover:text-slate-200'
+                                }
                               >
-                                {r === 'unlimited' ? 'আনলিমিটেড' : `${r} রাউন্ড`}
+                                {r} রাউন্ড
                               </button>
                             ))}
-                          </div>
-                        </div>
-
-                        {/* Starting Player */}
-                        <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">কে প্রথমে শুরু করবেন?</label>
-                          <div className="grid grid-cols-2 gap-3">
                             <button
                               type="button"
-                              onClick={() => setDiceCurrentTurn('wife')}
-                              className={`py-2.5 text-xs font-bold rounded-xl transition border flex items-center justify-center space-x-1.5 ${
-                                diceCurrentTurn === 'wife'
-                                  ? 'bg-rose-900/30 border-rose-500/40 text-rose-300 shadow'
-                                  : 'bg-slate-800 border-slate-750 text-slate-400 hover:text-slate-200'
-                                }`}
+                              onClick={() => setIsCustomRounds(true)}
+                              className={isCustomRounds
+                                ? 'py-2 text-xs font-bold rounded-xl transition border bg-indigo-600 border-indigo-500 text-white shadow'
+                                : 'py-2 text-xs font-bold rounded-xl transition border bg-slate-800 border-slate-750 text-slate-400 hover:text-slate-200'
+                              }
                             >
-                              <span>👩 মেয়ে</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDiceCurrentTurn('husband')}
-                              className={`py-2.5 text-xs font-bold rounded-xl transition border flex items-center justify-center space-x-1.5 ${
-                                diceCurrentTurn === 'husband'
-                                  ? 'bg-indigo-900/30 border-indigo-500/40 text-indigo-300 shadow'
-                                  : 'bg-slate-800 border-slate-750 text-slate-400 hover:text-slate-200'
-                                }`}
-                            >
-                              <span>👨 ছেলে</span>
+                              কাস্টম ✍️
                             </button>
                           </div>
+                          
+                          {isCustomRounds && (
+                            <div className="mt-3 animate-scale-up">
+                              <label className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-1">কাস্টম রাউন্ড সংখ্যা লিখুন (জোড় সংখ্যা বাঞ্ছনীয়)</label>
+                              <input
+                                type="number"
+                                min="2"
+                                step="2"
+                                value={customRoundsInput}
+                                onChange={(e) => setCustomRoundsInput(e.target.value)}
+                                className="w-full max-w-[120px] bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => handleStartDiceGame(diceTotalRounds, diceCurrentTurn)}
+                        onClick={() => {
+                          const rounds = isCustomRounds ? parseInt(customRoundsInput) || 6 : diceTotalRounds;
+                          handleStartDiceGame(rounds);
+                        }}
                         className="w-full bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg transition active:scale-[0.98]"
                       >
                         খেলা শুরু করুন 🎮
@@ -1679,82 +1801,42 @@ function App() {
 
                   {/* Play Screen */}
                   {(diceGameState === 'playing' || diceGameState === 'result' || diceGameState === 'penalty') && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-                      {/* Stats Panel & History */}
-                      <div className="bg-slate-800 border border-slate-750 p-5 rounded-3xl shadow flex flex-col gap-4">
-                        <div className="border-b border-slate-750 pb-3">
-                          <h3 className="text-sm font-bold text-slate-350">খেলার বিবরণী 📊</h3>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 bg-slate-900/40 p-3.5 rounded-2xl border border-slate-750/60">
-                          <div className="text-center border-r border-slate-750/60">
-                            <span className="block text-[10px] text-slate-555 font-bold uppercase">বর্তমান রাউন্ড</span>
-                            <span className="text-lg font-black text-white">
-                              {diceTotalRounds === 'unlimited' ? `${diceCurrentRound}` : `${diceCurrentRound}/${diceTotalRounds}`}
-                            </span>
-                          </div>
-                          <div className="text-center">
-                            <span className="block text-[10px] text-slate-555 font-bold uppercase">এখন খেলছেন</span>
-                            <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-                              diceCurrentTurn === 'wife' 
-                                ? 'bg-rose-950/40 text-rose-300 border border-rose-500/20' 
-                                : 'bg-indigo-950/40 text-indigo-300 border border-indigo-500/20'
-                            }`}>
-                              {diceCurrentTurn === 'wife' ? '👩 মেয়ে' : '👨 ছেলে'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* History feed */}
-                        <div className="flex-1 flex flex-col min-h-[180px]">
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2">আগের রাউন্ডগুলোর ফল:</span>
-                          <div className="flex-1 overflow-y-auto max-h-[200px] space-y-2 pr-1.5 custom-scrollbar">
-                            {diceRoundHistory.length === 0 ? (
-                              <p className="text-center text-xs text-slate-600 italic py-6">কোনো রাউন্ড খেলা হয়নি</p>
-                            ) : (
-                              diceRoundHistory.map((h, i) => (
-                                <div key={i} className="bg-slate-900/20 border border-slate-750/40 rounded-xl p-2 flex items-center justify-between text-xs">
-                                  <span className="text-slate-500 font-bold">রাউন্ড {h.round}</span>
-                                  <span className="font-semibold text-slate-350">{h.player === 'wife' ? 'মেয়ে' : 'ছেলে'}</span>
-                                  <span className="font-bold bg-slate-900 px-2 py-0.5 rounded text-indigo-450">ডাইস: {h.roll}</span>
-                                  <span className={`font-black ${h.result === 'correct' ? 'text-green-400' : 'text-rose-400'}`}>
-                                    {h.result === 'correct' ? 'সঠিক ✅' : 'ভুল ❌'}
-                                  </span>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm("আপনি কি নিশ্চিতভাবে গেমটি বন্ধ করে মেইন সেটআপে ফেরত যেতে চান?")) {
-                              setDiceGameState('setup');
-                            }
-                          }}
-                          className="w-full bg-slate-755 hover:bg-slate-700 text-slate-400 hover:text-slate-300 text-xs py-2 rounded-xl transition border border-slate-700"
-                        >
-                          খেলা রিসেট করুন 🔁
-                        </button>
-                      </div>
-
-                      {/* Main Dice Rolling Box */}
-                      <div className="md:col-span-2 bg-slate-800 border border-slate-750 p-6 md:p-8 rounded-3xl shadow flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                      
+                      {/* Main Dice Rolling Box (Rendered first to show on top in mobile) */}
+                      <div className="lg:col-span-2 bg-slate-800 border border-slate-750 p-6 md:p-8 rounded-3xl shadow flex flex-col items-center justify-center text-center relative overflow-hidden">
                         
                         {/* Status header */}
                         <div className="mb-6">
-                          <span className="text-xs text-slate-400">১ থেকে ৬ এর মধ্যে যেকোনো একটি সংখ্যা মুখে অনুমান করুন!</span>
+                          <span className="text-xs text-slate-400">ডাইস রোল করতে ডাইসের উপর ক্লিক করুন!</span>
                           <h3 className="text-lg font-extrabold text-white mt-1">
-                            {diceCurrentTurn === 'wife' ? '👩 মেয়ের অনুমান করার পালা' : '👨 ছেলের অনুমান করার পালা'}
+                            {(() => {
+                              const activePlayer = diceCurrentTurn === 'player1' ? sessionPlayer1 : sessionPlayer2;
+                              const genderEmoji = activePlayer.gender === 'female' ? '👩' : '👨';
+                              return genderEmoji + ' ' + activePlayer.name + '-এর অনুমান করার পালা';
+                            })()}
                           </h3>
                         </div>
 
                         {/* SVG Dice Animation Representation */}
                         <div className="relative my-4 select-none">
-                          <div className={`w-28 h-28 bg-gradient-to-br from-slate-900 to-slate-955 rounded-3xl border-4 border-slate-750 shadow-2xl flex items-center justify-center p-4 transition-all duration-300 ${
-                            isDiceRolling ? 'animate-bounce scale-105 border-indigo-500' : 'border-slate-700'
-                          }`}>
+                          <div 
+                            onClick={() => {
+                              if (isDiceRolling || diceGameState !== 'playing') return;
+                              if (diceGuessedNumber === null) {
+                                alert("ডাইস রোল করার আগে অনুগ্রহ করে আপনার অনুমানকৃত সংখ্যা নির্বাচন করুন!");
+                                return;
+                              }
+                              handleRollDice();
+                            }}
+                            className={diceGameState === 'playing' && !isDiceRolling 
+                              ? 'w-28 h-28 bg-gradient-to-br from-slate-900 to-slate-955 rounded-3xl border-4 shadow-2xl flex items-center justify-center p-4 transition-all duration-300 cursor-pointer border-indigo-500/40 hover:border-indigo-500 scale-105 active:scale-95 animate-pulse' 
+                              : isDiceRolling 
+                                ? 'w-28 h-28 bg-gradient-to-br from-slate-900 to-slate-955 rounded-3xl border-4 shadow-2xl flex items-center justify-center p-4 transition-all duration-300 animate-bounce border-indigo-500'
+                                : 'w-28 h-28 bg-gradient-to-br from-slate-900 to-slate-955 rounded-3xl border-4 shadow-2xl flex items-center justify-center p-4 transition-all duration-300 border-slate-700'
+                            }
+                            title={diceGameState === 'playing' ? "ডাইস রোল করতে ক্লিক করুন" : ""}
+                          >
                             {diceRolledNumber ? (
                               <div className="relative w-full h-full flex items-center justify-center">
                                 {/* Stylized Dice Dots Display */}
@@ -1805,43 +1887,36 @@ function App() {
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-4xl text-slate-550">🎲</span>
+                              <span className="text-5xl text-slate-550 select-none">🎲</span>
                             )}
                           </div>
                         </div>
 
-                        {/* Actions buttons */}
+                        {/* Guessed Number Selector Grid */}
                         {diceGameState === 'playing' && (
-                          <button
-                            type="button"
-                            disabled={isDiceRolling}
-                            onClick={handleRollDice}
-                            className="mt-6 px-10 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isDiceRolling ? 'ডাইস ঘুরছে...' : '🎲 ডাইস রোল করুন'}
-                          </button>
-                        )}
-
-                        {/* Did you guess correctly? Buttons */}
-                        {diceGameState === 'result' && (
-                          <div className="mt-6 w-full max-w-sm animate-scale-up flex flex-col items-center">
-                            <p className="text-xs text-slate-400 mb-3">ডাইস রোল হয়েছে! আপনার মুখে করা অনুমানটি কি মিলেছে?</p>
-                            <div className="grid grid-cols-2 gap-3 w-full">
-                              <button
-                                type="button"
-                                onClick={() => handleDiceGuessResult(true)}
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-3 rounded-xl transition shadow active:scale-[0.98]"
-                              >
-                                ✅ হ্যাঁ, মিলেছে (Right)
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDiceGuessResult(false)}
-                                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-3 rounded-xl transition shadow active:scale-[0.98]"
-                              >
-                                ❌ না, ভুল হয়েছে (Wrong)
-                              </button>
+                          <div className="mt-4 flex flex-col items-center space-y-3 animate-scale-up">
+                            <span className="text-xs font-bold text-indigo-300">আপনার অনুমান নির্বাচন করুন:</span>
+                            <div className="grid grid-cols-6 gap-2">
+                              {[1, 2, 3, 4, 5, 6].map(num => (
+                                <button
+                                  key={num}
+                                  type="button"
+                                  disabled={isDiceRolling}
+                                  onClick={() => setDiceGuessedNumber(num)}
+                                  className={diceGuessedNumber === num
+                                    ? 'w-10 h-10 rounded-xl font-black text-sm transition active:scale-90 bg-rose-600 text-white shadow-lg border border-rose-500/60 scale-110'
+                                    : 'w-10 h-10 rounded-xl font-black text-sm transition active:scale-90 bg-slate-900 border border-slate-750 text-slate-400 hover:text-slate-200'
+                                  }
+                                >
+                                  {num}
+                                </button>
+                              ))}
                             </div>
+                            {diceGuessedNumber !== null && (
+                              <p className="text-[10px] text-indigo-400 font-bold animate-bounce mt-1">
+                                👆 অনুমান সিলেক্ট করা হয়েছে! এবার ডাইসের উপর টাচ বা ক্লিক করে রোল করুন!
+                              </p>
+                            )}
                           </div>
                         )}
 
@@ -1853,12 +1928,16 @@ function App() {
                             </span>
                             
                             <h4 className="text-xs font-bold text-slate-450 mb-1">
-                              {diceCurrentTurn === 'wife' ? '👩 মেয়ের জন্য নির্ধারণ করা টাস্ক:' : '👨 ছেলের জন্য নির্ধারণ করা টাস্ক:'}
+                              {(() => {
+                                const activePlayer = diceCurrentTurn === 'player1' ? sessionPlayer1 : sessionPlayer2;
+                                const genderEmoji = activePlayer.gender === 'female' ? '👩' : '👨';
+                                return genderEmoji + ' ' + activePlayer.name + '-এর জন্য নির্ধারিত টাস্ক:';
+                              })()}
                             </h4>
                             
                             {/* Task Image (If configured) */}
                             {activePenaltyTask.url && (
-                              <div className="w-full max-w-[240px] aspect-[4/3] rounded-2xl overflow-hidden border border-rose-500/20 shadow-md mb-3 bg-slate-950/45 flex items-center justify-center relative group">
+                              <div className="w-full max-w-[240px] aspect-[4/3] rounded-2xl overflow-hidden border border-rose-500/20 shadow-md mb-3 bg-slate-955 flex items-center justify-center relative group">
                                 <img 
                                   src={activePenaltyTask.url} 
                                   alt={activePenaltyTask.name}
@@ -1891,6 +1970,112 @@ function App() {
                         )}
 
                       </div>
+
+                      {/* Stats Panel & History (Rendered second so it goes on the right on desktop, and below on mobile) */}
+                      <div className="bg-slate-800 border border-slate-750 p-5 rounded-3xl shadow flex flex-col gap-4">
+                        <div className="border-b border-slate-750 pb-3 flex items-center justify-between">
+                          <h3 className="text-sm font-extrabold text-white flex items-center space-x-1.5">
+                            <span>খেলার বিবরণী 📊</span>
+                          </h3>
+                        </div>
+
+                        {/* Leaderboard Scoreboard Card */}
+                        <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-750/80 space-y-3">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-850 pb-1.5">🏆 স্কোরবোর্ড</span>
+                          
+                          <div className="space-y-2">
+                            {/* Player 1 Stats */}
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-indigo-300 flex items-center space-x-1">
+                                <span>{sessionPlayer1.gender === 'female' ? '👩' : '👨'}</span>
+                                <span>{sessionPlayer1.name}</span>
+                              </span>
+                              <div className="space-x-1.5 font-extrabold text-[10px]">
+                                <span className="bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">সঠিক: {(() => {
+                                  const history = diceRoundHistory.filter(h => h.player === sessionPlayer1.name);
+                                  return history.filter(h => h.result === 'correct').length;
+                                })()}</span>
+                                <span className="bg-rose-950/40 text-rose-455 border border-rose-500/20 px-2 py-0.5 rounded">পেনাল্টি: {(() => {
+                                  const history = diceRoundHistory.filter(h => h.player === sessionPlayer1.name);
+                                  return history.filter(h => h.result === 'penalty').length;
+                                })()}</span>
+                              </div>
+                            </div>
+
+                            {/* Player 2 Stats */}
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-rose-300 flex items-center space-x-1">
+                                <span>{sessionPlayer2.gender === 'female' ? '👩' : '👨'}</span>
+                                <span>{sessionPlayer2.name}</span>
+                              </span>
+                              <div className="space-x-1.5 font-extrabold text-[10px]">
+                                <span className="bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">সঠিক: {(() => {
+                                  const history = diceRoundHistory.filter(h => h.player === sessionPlayer2.name);
+                                  return history.filter(h => h.result === 'correct').length;
+                                })()}</span>
+                                <span className="bg-rose-950/40 text-rose-455 border border-rose-500/20 px-2 py-0.5 rounded">পেনাল্টি: {(() => {
+                                  const history = diceRoundHistory.filter(h => h.player === sessionPlayer2.name);
+                                  return history.filter(h => h.result === 'penalty').length;
+                                })()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* General Session Info */}
+                        <div className="grid grid-cols-2 gap-2 bg-slate-900/20 p-2.5 rounded-2xl border border-slate-750/30 text-center text-xs">
+                          <div>
+                            <span className="block text-[9px] text-slate-500 font-bold uppercase">রাউন্ড</span>
+                            <span className="font-extrabold text-slate-200 mt-0.5 block">{diceCurrentRound} / {diceTotalRounds}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[9px] text-slate-500 font-bold uppercase">পাস হওয়া রাউন্ড</span>
+                            <span className="font-extrabold text-slate-200 mt-0.5 block">{diceRoundHistory.length}</span>
+                          </div>
+                        </div>
+
+                        {/* History Feed list */}
+                        <div className="flex-1 flex flex-col min-h-[180px]">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 block">রাউন্ড সমূহের বিবরণ:</span>
+                          <div className="flex-1 overflow-y-auto max-h-[220px] space-y-2 pr-1.5 custom-scrollbar">
+                            {diceRoundHistory.length === 0 ? (
+                              <p className="text-center text-xs text-slate-600 italic py-6">কোনো রাউন্ড খেলা হয়নি</p>
+                            ) : (
+                              diceRoundHistory.map((h, i) => (
+                                <div key={i} className="bg-slate-900/40 border border-slate-750/60 rounded-2xl p-4 flex flex-col gap-1.5 text-xs animate-scale-up">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-extrabold uppercase">রাউন্ড {h.round}</span>
+                                    <span className={h.result === 'correct' ? 'font-black text-green-400' : 'font-black text-rose-455'}>
+                                      {h.result === 'correct' ? 'সঠিক অনুমান ✅' : 'ভুল অনুমান ❌'}
+                                    </span>
+                                  </div>
+                                  <p className="text-slate-300 font-semibold leading-relaxed">
+                                    <strong>{h.player}</strong> {h.guess} অনুমান করেছিলেন, ডাইসে <strong>{h.roll}</strong> এসেছে।
+                                  </p>
+                                  {h.result === 'penalty' && h.task && (
+                                    <div className="bg-rose-950/20 border border-rose-500/10 p-2.5 rounded-xl text-[10px] text-rose-350 leading-relaxed font-semibold">
+                                      🤫 পেনাল্টি টাস্ক: <strong>{h.task.name}</strong>
+                                    </div>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("আপনি কি নিশ্চিতভাবে গেমটি বন্ধ করে মেইন সেটআপে ফেরত যেতে চান?")) {
+                              setDiceGameState('setup');
+                            }
+                          }}
+                          className="w-full bg-slate-755 hover:bg-slate-700 text-slate-400 hover:text-slate-350 text-xs py-2 rounded-xl transition border border-slate-700"
+                        >
+                          খেলা রিসেট করুন 🔁
+                        </button>
+                      </div>
+
                     </div>
                   )}
 
@@ -1902,18 +2087,38 @@ function App() {
                       <p className="text-xs text-slate-400 mb-6 leading-relaxed">
                         সবগুলো রাউন্ড সফলভাবে খেলা হয়েছে! দাম্পত্য বন্ধন ও ঘনিষ্ঠতা আরও মধুর হোক। 💖
                       </p>
+                      
+                      {/* Final Scoreboard Results Display */}
+                      <div className="bg-slate-900/60 border border-slate-750 p-4 rounded-2xl text-left space-y-3 mb-6">
+                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-wider block border-b border-slate-800 pb-1.5">📊 চূড়ান্ত ফলাফল</span>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-bold text-slate-300">
+                            <span>{sessionPlayer1.name} (সঠিক / ভুল)</span>
+                            <span className="text-indigo-300">
+                              {diceRoundHistory.filter(h => h.player === sessionPlayer1.name && h.result === 'correct').length} / {diceRoundHistory.filter(h => h.player === sessionPlayer1.name && h.result === 'penalty').length}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs font-bold text-slate-300">
+                            <span>{sessionPlayer2.name} (সঠিক / ভুল)</span>
+                            <span className="text-rose-300">
+                              {diceRoundHistory.filter(h => h.player === sessionPlayer2.name && h.result === 'correct').length} / {diceRoundHistory.filter(h => h.player === sessionPlayer2.name && h.result === 'penalty').length}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
                         <button
                           type="button"
                           onClick={() => setDiceGameState('setup')}
-                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-xs shadow transition"
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-xs shadow transition active:scale-95"
                         >
                           আবার খেলুন 🔁
                         </button>
                         <button
                           type="button"
                           onClick={() => setActiveGameId(null)}
-                          className="w-full bg-slate-750 hover:bg-slate-700 text-slate-350 py-3 rounded-xl font-bold text-xs transition"
+                          className="w-full bg-slate-750 hover:bg-slate-700 text-slate-350 py-3 rounded-xl font-bold text-xs transition active:scale-95"
                         >
                           গেম সিলেকশনে ফিরুন 🔙
                         </button>
