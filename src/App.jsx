@@ -437,17 +437,25 @@ function App() {
     } else if (configData && Array.isArray(configData.categories)) {
       cats = configData.categories;
       
-      let loadedGames = DEFAULT_GAMES;
+      let loadedGames = [...DEFAULT_GAMES];
       if (Array.isArray(configData.games)) {
-        loadedGames = configData.games;
-      } else {
-        loadedGames = [
-          { id: 'spin', name: '🎡 মায়াবৃত্ত স্পিন গেম', description: 'বিভিন্ন চাকা ও ক্যাটেগরি স্পিন করে রোমান্টিক সংমিশ্রণ ফলাফল তৈরি করুন।', type: 'spin', enabled: configData.showSpinGame !== undefined ? configData.showSpinGame : true },
-          { id: 'dice', name: '🎲 ডাইস গেসিং গেম', description: 'ডাইস রোল করে সঠিক অনুমান করার খেলা। ভুল অনুমানের জন্য রোমান্টিক পেনাল্টি টাস্ক!', type: 'dice', enabled: configData.showDiceGame !== undefined ? configData.showDiceGame : true },
-          { id: 'truth_dare', name: '🤫 ট্রুথ অ্যান্ড ডেয়ার', description: 'সত্য বলা অথবা রোমান্টিক ডেয়ার সম্পন্ন করার খেলা। পার্টনারদের জন্য স্পেশাল!', type: 'truth_dare', enabled: true }
-        ];
+        // Merge configData.games with DEFAULT_GAMES to dynamically add new games
+        loadedGames = DEFAULT_GAMES.map(defaultGame => {
+          const existingGame = configData.games.find(g => g.id === defaultGame.id);
+          if (existingGame) {
+            return {
+              ...defaultGame,
+              enabled: existingGame.enabled,
+              name: existingGame.name || defaultGame.name,
+              description: existingGame.description || defaultGame.description
+            };
+          }
+          return defaultGame;
+        });
       }
       setGames(loadedGames);
+      // Auto save the merged config back to server so it updates the file
+      localStorage.setItem('spinner_custom_config', JSON.stringify({ ...configData, games: loadedGames }));
     }
 
     // Migrate/Initialize husband_tasks and wife_tasks categories
@@ -1583,6 +1591,7 @@ function App() {
                     onClick={() => {
                       setActiveGameId(g.id);
                       if (g.type === 'dice') setDiceGameState('setup');
+                      if (g.type === 'truth_dare') setTdGameState('setup');
                     }}
                     className="bg-slate-800 border border-slate-700/60 p-6 rounded-3xl text-left hover:border-rose-500/40 hover:bg-slate-750 transition duration-200 flex flex-col justify-between min-h-[150px] shadow-lg group relative overflow-hidden active:scale-[0.98]"
                   >
