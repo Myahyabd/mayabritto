@@ -579,6 +579,88 @@ function App() {
   };
 
 
+  // Sync config to GitHub (triggers Netlify build to deploy updates live from mobile)
+  const handleSyncToGitHub = async (e) => {
+    e.preventDefault();
+    if (!ghUsername.trim() || !ghRepo.trim() || !ghToken.trim()) {
+      alert("দয়া করে গিটহাব ইউজারনেম, রিপোজিটরি এবং পার্সোনাল অ্যাক্সেস টোকেন (PAT) লিখুন!");
+      return;
+    }
+
+    setIsSyncing(true);
+
+    try {
+      // Save inputs to localStorage for convenience
+      localStorage.setItem('gh_username', ghUsername.trim());
+      localStorage.setItem('gh_repo', ghRepo.trim());
+      localStorage.setItem('gh_token', ghToken.trim());
+      localStorage.setItem('gh_branch', ghBranch.trim());
+
+      const configToSave = {
+        categories,
+        games
+      };
+      const configString = JSON.stringify(configToSave, null, 2);
+
+      // Safe base64 encoding for UTF-8
+      const utf8Bytes = new TextEncoder().encode(configString);
+      let binary = '';
+      for (let i = 0; i < utf8Bytes.byteLength; i++) {
+        binary += String.fromCharCode(utf8Bytes[i]);
+      }
+      const base64Content = window.btoa(binary);
+
+      const path = 'public/uploads/config.json';
+      const url = `https://api.github.com/repos/${ghUsername.trim()}/${ghRepo.trim()}/contents/${path}`;
+      const headers = {
+        'Authorization': `token ${ghToken.trim()}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      };
+
+      // Fetch existing file SHA
+      let sha = null;
+      try {
+        const getRes = await fetch(`${url}?ref=${ghBranch.trim()}`, { headers });
+        if (getRes.ok) {
+          const getData = await getRes.json();
+          sha = getData.sha;
+        }
+      } catch (err) {
+        console.warn("Could not fetch existing SHA, assuming new file:", err);
+      }
+
+      // Commit file to GitHub
+      const putBody = {
+        message: "Update game configuration from mobile admin panel 📱🚀",
+        content: base64Content,
+        branch: ghBranch.trim()
+      };
+      if (sha) {
+        putBody.sha = sha;
+      }
+
+      const putRes = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(putBody)
+      });
+
+      if (!putRes.ok) {
+        const errData = await putRes.json();
+        throw new Error(errData.message || "Failed to push to GitHub");
+      }
+
+      alert("🎉 গিটহাবে সফলভাবে সিঙ্ক ও আপডেট করা হয়েছে! নেটলিফাই এখন সাইটটি লাইভ করছে। প্রায় ৩০-৪৫ সেকেন্ডের মধ্যে আপনার আপডেট করা অপশনগুলো যেকোনো ডিভাইসে লাইভ দেখতে পাবেন।");
+    } catch (err) {
+      console.error(err);
+      alert(`গিটহাব সিঙ্ক ব্যর্থ হয়েছে: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+
   // --- DICE GAME LOGIC ---
   const handleStartDiceGame = (rounds, startingTurn) => {
     setDiceTotalRounds(rounds);
